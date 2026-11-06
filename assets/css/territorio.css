@@ -1,0 +1,6 @@
+/* Estilos propios del módulo Territorio; no modificar AdminLTE ni SIAD. */
+#mapa {height: min(70vh, 720px); min-height:430px; width:100%; border-radius:.35rem}
+#resultados {max-height:250px; overflow-y:auto}
+.leaflet-container {z-index:1}
+.app-sidebar .nav-link.active {font-weight:600}
+@media (max-width:991px){#mapa{height:57vh;min-height:360px}}

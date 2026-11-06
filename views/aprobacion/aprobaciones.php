@@ -1,0 +1,1 @@
+<div class="card"><div class="card-header"><strong>Solicitudes y aprobaciones</strong></div><div class="card-body"><p>Circuito de revisión y publicación administrativa.</p><div class="alert alert-secondary mb-0">Sección reservada. No habilita todavía altas ni modificaciones.</div></div></div>

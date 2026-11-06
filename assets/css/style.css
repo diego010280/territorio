@@ -1,0 +1,562 @@
+
+/* =====================================================
+   TERRITORIO - PALETA VERDE INSTITUCIONAL
+   AdminLTE 4 / Bootstrap 5.3
+===================================================== */
+
+:root {
+    --territorio-primary-dark: #102D2A;
+    --territorio-primary: #184E45;
+    --territorio-accent: #287A63;
+
+    --territorio-sidebar-bg: #102D2A;
+    --territorio-sidebar-hover: #184E45;
+    --territorio-sidebar-active: #287A63;
+
+    --territorio-navbar-bg: #184E45;
+    --territorio-content-bg: #F2F6F3;
+
+    --territorio-text: #21342C;
+    --territorio-text-muted: #61756A;
+    --territorio-border: #D7E4DB;
+}
+
+/* Sidebar y marca */
+
+.app-sidebar,
+.sidebar-brand {
+    background-color: var(--territorio-sidebar-bg) !important;
+}
+
+.sidebar-menu .nav-header {
+    color: #B7D2C2 !important;
+}
+
+.sidebar-menu .nav-link,
+.sidebar-menu .nav-icon,
+.sidebar-menu .nav-arrow,
+.brand-text {
+    color: #FFFFFF !important;
+}
+
+.sidebar-menu .nav-link:hover {
+    background-color:
+        var(--territorio-sidebar-hover) !important;
+    color: #FFFFFF !important;
+}
+
+.sidebar-menu .nav-link.active {
+    background-color:
+        var(--territorio-sidebar-active) !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+
+.sidebar-menu .nav-link.active .nav-icon,
+.sidebar-menu .nav-link:hover .nav-icon {
+    color: #FFFFFF !important;
+}
+
+/* Navbar superior */
+
+.app-header.navbar {
+    background-color:
+        var(--territorio-navbar-bg) !important;
+    border-bottom: 1px solid #123D34 !important;
+}
+
+.app-header .nav-link,
+.app-header .navbar-user-info,
+.app-header .navbar-user-info i {
+    color: #FFFFFF !important;
+}
+
+.app-header .nav-link:hover {
+    color: #D3E9DC !important;
+}
+
+/* Área principal */
+
+.app-main {
+    background-color:
+        var(--territorio-content-bg);
+    color: var(--territorio-text);
+}
+
+/* Botones propios */
+
+.btn-territorio {
+    background-color: var(--territorio-accent);
+    color: #FFFFFF;
+    border-color: var(--territorio-accent);
+}
+
+.btn-territorio:hover {
+    background-color: #206550;
+    border-color: #206550;
+    color: #FFFFFF;
+}
+
+/* Elementos de formularios */
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #83AE99;
+    box-shadow: 0 0 0 .2rem rgba(40,122,99,.16);
+}
+
+
+/* =========================================================
+   7. DATATABLES GLOBAL
+========================================================= */
+
+.dataTables_wrapper .select-info {
+    display: none !important;
+}
+
+
+/*
+ * Evita que filas responsive vacías conserven altura.
+ * Se aplica a todas las DataTables del sistema.
+ */
+
+table.dataTable tbody tr.child:empty,
+table.dataTable tbody tr.dtr-child:empty {
+    display: none !important;
+}
+
+
+/*
+ * Si Responsive oculta una fila de detalle,
+ * no debe conservar espacio.
+ */
+
+table.dataTable tbody tr.child[style*="display: none"],
+table.dataTable tbody tr.dtr-child[style*="display: none"] {
+    display: none !important;
+}
+
+
+/* =========================================================
+   8. BLOQUEO DE SESIÓN
+========================================================= */
+
+#bloqueoSesionBanco {
+    position: fixed;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    z-index: 999999;
+
+    background: rgba(8, 15, 30, 0.94);
+}
+
+
+.bloqueo-card {
+    width: 100%;
+    max-width: 560px;
+
+    border: 0;
+    border-radius: 14px;
+
+    overflow: hidden;
+
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+
+.bloqueo-header {
+    padding: 28px 20px;
+
+    color: #ffffff;
+    text-align: center;
+
+    background: linear-gradient(
+        135deg,
+        var(--silegin-primary-dark),
+        var(--silegin-primary)
+    );
+}
+
+
+.bloqueo-header h2 {
+    margin: 0;
+
+    font-size: 30px;
+    font-weight: 700;
+}
+
+
+.bloqueo-body {
+    padding: 35px 30px 30px;
+
+    background: #ffffff;
+
+    text-align: center;
+}
+
+
+.bloqueo-icono {
+    margin-bottom: 15px;
+
+    font-size: 64px;
+}
+
+
+.bloqueo-titulo {
+    margin-bottom: 10px;
+
+    color: var(--silegin-text);
+
+    font-size: 22px;
+    font-weight: 700;
+}
+
+
+.bloqueo-texto {
+    margin-bottom: 25px;
+
+    color: var(--silegin-text-muted);
+
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+
+.btn-bloqueo-login {
+    min-width: 220px;
+
+    padding: 12px 22px;
+
+    border-radius: 8px;
+
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   9. SWEETALERT DE SESIÓN
+========================================================= */
+
+.swal2-popup.swal-aviso-sesion {
+    padding: 1.8rem !important;
+
+    border-radius: 14px !important;
+}
+
+
+.swal2-title.swal-aviso-titulo {
+    color: var(--silegin-primary-dark) !important;
+
+    font-size: 1.6rem !important;
+    font-weight: 700 !important;
+}
+
+
+.swal2-confirm.swal-aviso-boton {
+    padding: 10px 24px !important;
+
+    border-radius: 8px !important;
+
+    font-weight: 600 !important;
+}
+
+
+/* =========================================================
+   10. OVERLAY DE CARGA
+========================================================= */
+
+.overlay-carga {
+    position: fixed;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    z-index: 999999;
+
+    background: rgba(0, 0, 0, 0.82);
+
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+
+.loader-box {
+    width: 100%;
+    max-width: 410px;
+
+    padding: 38px 35px 32px;
+
+    color: #ffffff;
+    text-align: center;
+
+    background: #1f2329;
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.65),
+        0 0 0 1px rgba(255, 255, 255, 0.03);
+
+    animation: aparecerLoader 0.25s ease-out;
+}
+
+
+.loader-spinner {
+    position: relative;
+
+    width: 82px;
+    height: 82px;
+
+    margin: 0 auto;
+
+    border: 7px solid rgba(255, 255, 255, 0.12);
+    border-top-color: #4da3ff;
+    border-right-color: #4da3ff;
+
+    border-radius: 50%;
+
+    animation: girarLoader 1s linear infinite;
+}
+
+
+.loader-spinner::after {
+    content: "";
+
+    position: absolute;
+    inset: 11px;
+
+    border: 5px solid transparent;
+    border-top-color: #ffffff;
+    border-left-color: #ffffff;
+
+    border-radius: 50%;
+
+    animation: girarLoaderInverso 0.65s linear infinite;
+}
+
+
+.loader-box h4 {
+    margin-top: 26px;
+    margin-bottom: 10px;
+
+    color: #ffffff;
+
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+
+.loader-box p {
+    margin-bottom: 22px;
+
+    color: #c8cdd3;
+
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+
+.barra-carga {
+    position: relative;
+
+    width: 100%;
+    height: 6px;
+
+    margin-bottom: 18px;
+
+    overflow: hidden;
+
+    background: rgba(255, 255, 255, 0.1);
+
+    border-radius: 10px;
+}
+
+
+.barra-carga-animada {
+    position: absolute;
+
+    top: 0;
+    left: -40%;
+
+    width: 40%;
+    height: 100%;
+
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #4da3ff,
+        #ffffff,
+        #4da3ff,
+        transparent
+    );
+
+    border-radius: 10px;
+
+    animation: moverBarra 1.4s ease-in-out infinite;
+}
+
+
+.tiempo-carga {
+    color: #aeb5bd;
+
+    font-size: 13px;
+}
+
+
+.tiempo-carga strong {
+    color: #ffffff;
+
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   11. ANIMACIONES
+========================================================= */
+
+@keyframes girarLoader {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+@keyframes girarLoaderInverso {
+    from {
+        transform: rotate(360deg);
+    }
+
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+
+@keyframes moverBarra {
+    from {
+        left: -40%;
+    }
+
+    to {
+        left: 110%;
+    }
+}
+
+
+@keyframes aparecerLoader {
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(10px)
+            scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+/* =========================================================
+   12. UTILIDADES
+========================================================= */
+
+@media (max-width: 575.98px) {
+
+    .ocultarmobile {
+        display: none !important;
+    }
+
+}
+
+
+/* =========================================================
+   13. RESPONSIVE DEL LOADER
+========================================================= */
+
+@media (max-width: 575.98px) {
+
+    .overlay-carga {
+        padding: 15px;
+    }
+
+
+    .loader-box {
+        max-width: 100%;
+
+        padding: 30px 22px 26px;
+
+        border-radius: 12px;
+    }
+
+
+    .loader-spinner {
+        width: 68px;
+        height: 68px;
+
+        border-width: 6px;
+    }
+
+
+    .loader-spinner::after {
+        inset: 9px;
+
+        border-width: 4px;
+    }
+
+
+    .loader-box h4 {
+        margin-top: 22px;
+
+        font-size: 18px;
+    }
+
+
+    .loader-box p {
+        font-size: 13px;
+    }
+
+}
+
+
+/* =========================================================
+   14. ACCESIBILIDAD
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .loader-box,
+    .loader-spinner,
+    .loader-spinner::after,
+    .barra-carga-animada {
+        animation-duration: 2s;
+    }
+
+}

@@ -1,0 +1,1 @@
+<div class="card"><div class="card-header"><strong>Establecimientos educativos</strong></div><div class="card-body"><p>Ubicaciones y capas de escuelas.</p><div class="alert alert-secondary mb-0">Sección reservada. No habilita todavía altas ni modificaciones.</div></div></div>

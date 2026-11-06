@@ -1,0 +1,1 @@
+<div class="card"><div class="card-header"><strong>Jurisdicciones</strong></div><div class="card-body"><p>Vinculación histórica y actual de barrios con organismos RRHH.</p><div class="alert alert-secondary mb-0">Sección reservada. No habilita todavía altas ni modificaciones.</div></div></div>

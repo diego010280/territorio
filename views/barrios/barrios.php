@@ -1,0 +1,1 @@
+<div class="card"><div class="card-header"><strong>Barrios</strong></div><div class="card-body"><p>Administración de barrios, edición de polígonos y carga KML/KMZ.</p><div class="alert alert-secondary mb-0">Sección reservada. No habilita todavía altas ni modificaciones.</div></div></div>
