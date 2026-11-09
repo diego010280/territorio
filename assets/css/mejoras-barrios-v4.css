@@ -1,0 +1,9 @@
+/* Territorio: resaltado persistente de la herramienta de edición activa */
+#pbDibujar.geo-herramienta-activa,#pbEditar.geo-herramienta-activa{
+ background:#175d49!important;color:#fff!important;border:2px solid #103d31!important;
+ box-shadow:0 0 0 .25rem rgba(40,122,99,.24)!important;font-weight:700;
+}
+.geo-modo-actual{padding:.55rem .75rem;background:#e5f1ea;color:#174d3a;
+ border-left:4px solid #287a63;border-radius:5px;font-weight:600;font-size:.85rem;}
+#gbTabla td:nth-child(8){white-space:normal;min-width:155px}
+@media(max-width:767px){#pbDibujar,#pbEditar,#pbFinEdicion{min-height:40px}}

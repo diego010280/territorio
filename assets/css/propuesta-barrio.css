@@ -1,0 +1,3 @@
+#pbMapa{height:clamp(380px,60vh,700px);width:100%;border:1px solid #d7e4db;border-radius:8px;z-index:1}
+#pbForm .btn{min-height:39px}
+@media(max-width:767px){#pbMapa{height:53vh;min-height:350px}#pbForm .btn{min-height:44px}}

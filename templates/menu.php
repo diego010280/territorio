@@ -6,23 +6,24 @@
   $menus= new Menu();
   $menu=$menus->getUserMenu($usuario ,$modulo);
 
-  $paginaActual = basename(
-    parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH)
-);
+  // Rutas reales del sistema: barrios.php, ctrlpanel.php, etc.
+  $paginaActiva = (string)($paginaActiva ?? $_GET['pagina'] ?? 'inicio');
+  function enlaceActivo(string $enlace, string $paginaActual): bool
+  {
+      $enlace = trim($enlace);
+      if ($enlace === '' || $enlace === '#') return false;
+      $url = parse_url($enlace);
+      if ($url === false || isset($url['host']) || isset($url['scheme'])) return false;
+      $ruta = basename((string)($url['path'] ?? ''));
+      $scriptActual = basename((string)($_SERVER['SCRIPT_NAME'] ?? ''));
+      if ($ruta === '' || $ruta !== $scriptActual) return false;
+      parse_str((string)($url['query'] ?? ''), $args);
+      if ($ruta === 'ctrlpanel.php') {
+          return (string)($args['pagina'] ?? 'inicio') === $paginaActual;
+      }
+      return true;
+  }
 
-function enlaceActivo(string $enlace, string $paginaActual): bool
-{
-    if ($enlace === '' || $enlace === '#') {
-        return false;
-    }
-
-    $paginaEnlace = basename(
-        parse_url($enlace, PHP_URL_PATH)
-    );
-
-    return $paginaEnlace === $paginaActual;
-}
-  
 ?>
 
 
@@ -65,8 +66,7 @@ function enlaceActivo(string $enlace, string $paginaActual): bool
                 </li>
 
                 <?php
-                $inicioActivo =
-                    $paginaActual === 'ctrlpanel.php' && (($_GET['pagina'] ?? 'inicio') === 'inicio');
+                $inicioActivo = $paginaActiva === 'inicio';
                 ?>
 
                 <li class="nav-item">
@@ -76,14 +76,6 @@ function enlaceActivo(string $enlace, string $paginaActual): bool
                     >
                         <i class="nav-icon bi bi-house"></i>
                         <p>Inicio</p>
-                    </a>
-                </li>
-
-                <!-- Acceso inicial al visor; puede migrarse luego al menú institucional -->
-                <li class="nav-item">
-                    <a href="ctrlpanel.php?pagina=visor"
-                       class="nav-link <?= ($paginaActiva ?? '') === 'visor' ? 'active' : '' ?>">
-                        <i class="nav-icon bi bi-map"></i><p>Visor territorial</p>
                     </a>
                 </li>
 
@@ -114,7 +106,7 @@ function enlaceActivo(string $enlace, string $paginaActual): bool
                                 if (
                                     enlaceActivo(
                                         $row_hijoActivo['objeto_link'],
-                                        $paginaActual
+                                        $paginaActiva
                                     )
                                 ) {
                                     $submenuActivo = true;
@@ -159,7 +151,7 @@ function enlaceActivo(string $enlace, string $paginaActual): bool
 
                                         $hijoActivo = enlaceActivo(
                                             $row_hijos['objeto_link'],
-                                            $paginaActual
+                                            $paginaActiva
                                         );
                                         ?>
 
@@ -199,7 +191,7 @@ function enlaceActivo(string $enlace, string $paginaActual): bool
 
                             $menuActivo = enlaceActivo(
                                 $row_obj['objeto_link'],
-                                $paginaActual
+                                $paginaActiva
                             );
                             ?>
 

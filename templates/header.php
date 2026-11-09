@@ -46,17 +46,33 @@
 
 <!-- Estilos propios -->
     <link rel="stylesheet" href="/territorio/assets/css/style.css?v=3.0.29">
-<!-- Diseño común de búsquedas -->
-    <link rel="stylesheet" href="/territorio/assets/css/busqueda.css?v=3.0.21">
+<!-- Diseño inicio -->
+    <link rel="stylesheet" href="/territorio/assets/css/inicio.css?v=2">
 
-    <!-- Personalización visual de Territorio -->
-<link rel="stylesheet" href="/territorio/assets/css/territorio.css">
-
-<?php if (($paginaActiva ?? '') === 'visor'): ?>
-    <!-- Leaflet para la primera prueba; en producción alojar localmente -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <link rel="stylesheet" href="/territorio/assets/css/visor.css?v=1">
+    <?php if (($paginaActiva ?? '') === 'gestion_barrios'): ?>
+    <link rel="stylesheet"
+          href="/territorio/assets/css/gestion-barrios.css?v=1">
 <?php endif; ?>
+
+   <!-- Diseño inicio -->
+<link rel="stylesheet" href="/territorio/assets/css/territorio.css?v=1">
+
+
+<link rel="stylesheet"
+      href="/territorio/assets/css/propuesta-barrio.css?v=2">
+
+<?php if (($paginaActiva ?? '') === 'visor' || !empty($cargarLeaflet)): ?>
+    <!-- Leaflet para la primera prueba; en producción alojar localmente -->
+    <!-- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"> -->
+    <link rel="stylesheet"
+      href="/territorio/assets/plugins/leaflet/leaflet.css">
+    <link rel="stylesheet" href="/territorio/assets/css/visor.css?v=5">
+<?php endif; ?>
+
+<link rel="stylesheet"
+      href="/territorio/assets/css/edicion-territorial.css?v=1">
+<link rel="stylesheet"
+      href="/territorio/assets/css/mejoras-barrios-v4.css?v=1">
 
 </head>
 

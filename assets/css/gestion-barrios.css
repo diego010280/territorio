@@ -1,0 +1,12 @@
+/* Administración de barrios · estilos aislados */
+#gbTabla {font-size:.91rem;}
+#gbTabla th {white-space:nowrap;}
+#gbTabla .btn {white-space:nowrap;}
+.gb-detalle-dl dt {color:#184E45;font-weight:600;}
+.gb-detalle-dl dd {overflow-wrap:anywhere;}
+@media (max-width:767px) {
+ #gbTabla {font-size:.86rem;}
+ .dataTables_wrapper .dt-layout-row {display:flex;flex-wrap:wrap;gap:.7rem;}
+ .dataTables_wrapper .dt-layout-cell {min-width:0;}
+ #gbTabla th, #gbTabla td {white-space:nowrap;}
+}

@@ -1,0 +1,67 @@
+/* TERRITORIO - Inicio / accesos rápidos. CSS específico, compatible con AdminLTE 4. */
+.territorio-inicio-header {padding-bottom: 0;}
+.territorio-hero {
+    position:relative; overflow:hidden; isolation:isolate;
+    background:linear-gradient(112deg,#123d35 0%,#1a5447 62%,#277661 100%);
+    border:1px solid rgba(10,51,41,.12); border-radius:16px;
+    padding:clamp(23px,3.2vw,38px); color:#fff;
+    box-shadow:0 10px 24px rgba(10,51,41,.12);
+}
+.territorio-hero:after {
+    content:"";position:absolute;right:-75px;top:-150px;width:380px;height:380px;
+    border:1px solid rgba(255,255,255,.15);border-radius:50%;z-index:-1;
+    box-shadow:0 0 0 38px rgba(255,255,255,.035),0 0 0 90px rgba(255,255,255,.025);
+}
+.territorio-hero-content {position:relative;z-index:2;max-width:740px;}
+.territorio-eyebrow {font-size:.72rem;font-weight:750;letter-spacing:.12em;color:#c3e7d7;margin-bottom:.6rem;}
+.territorio-hero-title {font-size:clamp(1.4rem,2.7vw,2.2rem);line-height:1.2;font-weight:750;letter-spacing:-.025em;margin:0 0 .55rem;color:#fff;}
+.territorio-hero-subtitle {font-size:.96rem;max-width:550px;line-height:1.6;color:#e0f0e7;margin:0;}
+.territorio-hero-emblema {position:absolute;right:7%;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.13);font-size:8rem;line-height:1;pointer-events:none;}
+.territorio-inicio {padding-top:1.3rem;padding-bottom:2rem;}
+.territorio-seccion-cabecera {display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin:0 0 1rem;}
+.territorio-seccion-titulo {color:#173a32;font-size:1.2rem;font-weight:750;letter-spacing:-.015em;margin:0 0 .25rem;}
+.territorio-seccion-descripcion {font-size:.86rem;color:#60756d;margin:0;}
+.territorio-conteo {display:inline-flex;align-items:center;gap:.5rem;border:1px solid #d6e5dd;border-radius:30px;padding:.45rem .8rem;color:#356456;background:#f4faf6;font-size:.76rem;font-weight:600;white-space:nowrap;}
+.territorio-inicio .geo-gadget {--gadget-accent:#26765c;--gadget-tint:#e4f3ec;
+    position:relative;display:flex;flex-direction:column;overflow:hidden;
+    border:1px solid #dce7e1;border-radius:14px;background:#fff;
+    text-decoration:none;color:#183d33;min-height:206px;
+    transition:border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.territorio-inicio .geo-gadget:before {content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--gadget-accent);opacity:.72;}
+.territorio-inicio .geo-gadget:hover {color:#183d33;transform:translateY(-3px);border-color:#b6d4c3;box-shadow:0 14px 30px rgba(16,45,42,.12);}
+.territorio-inicio .geo-gadget:focus-visible {outline:3px solid #287a63;outline-offset:3px;}
+.territorio-inicio .geo-gadget-body {padding:1.25rem 1.25rem .9rem;flex:1;}
+.territorio-inicio .geo-gadget-top {display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;}
+.territorio-inicio .geo-gadget-icon {width:54px;height:54px;display:grid;place-items:center;font-size:1.55rem;
+    background:var(--gadget-tint);border-radius:13px;color:var(--gadget-accent);}
+.territorio-inicio .geo-gadget-corner {color:#94aaa0;font-size:1rem;transition:transform .18s,color .18s;}
+.territorio-inicio .geo-gadget:hover .geo-gadget-corner {transform:translate(2px,-2px);color:var(--gadget-accent);}
+.territorio-inicio .geo-gadget-title {font-size:1.08rem;line-height:1.35;font-weight:750;color:#173c31;margin:0 0 .4rem;}
+.territorio-inicio .geo-gadget-text {font-size:.83rem;color:#697b73;margin:0;line-height:1.55;overflow-wrap:anywhere;}
+.territorio-inicio .geo-gadget-footer {display:flex;align-items:center;justify-content:space-between;
+    background:#f8fbf9;border-top:1px solid #e7eee9;padding:.72rem 1.25rem;
+    color:var(--gadget-accent);font-size:.81rem;font-weight:700;}
+.territorio-inicio .geo-gadget-footer i {font-size:1rem;}
+.territorio-inicio .geo-gadget--esmeralda {--gadget-accent:#23856d;--gadget-tint:#e1f4eb;}
+.territorio-inicio .geo-gadget--azul {--gadget-accent:#4277a5;--gadget-tint:#eaf2fa;}
+.territorio-inicio .geo-gadget--ambar {--gadget-accent:#a27626;--gadget-tint:#fbf1d9;}
+.territorio-inicio .geo-gadget--violeta {--gadget-accent:#80619b;--gadget-tint:#f1ebf7;}
+.territorio-inicio .geo-gadget--pizarra {--gadget-accent:#607681;--gadget-tint:#eaf0f3;}
+.territorio-vacio {padding:2.5rem 1.25rem;text-align:center;border:1px dashed #c7d9cf;border-radius:14px;background:#f8fbf9;}
+.territorio-vacio > i {display:block;color:#5c9980;font-size:2rem;margin-bottom:.7rem;}
+.territorio-vacio h3 {font-size:1rem;font-weight:700;color:#214337;}
+.territorio-vacio p {color:#63796e;max-width:600px;margin:.55rem auto 0;font-size:.87rem;}
+@media(max-width:575.98px) {
+    .territorio-hero {padding:22px 19px;border-radius:12px;}
+    .territorio-hero-emblema {font-size:5.5rem;right:-4px;opacity:.7;}
+    .territorio-inicio .geo-gadget {min-height:0;}
+    .territorio-inicio .geo-gadget-body {padding:1rem;}
+    .territorio-inicio .geo-gadget-icon {height:48px;width:48px;font-size:1.3rem;}
+    .territorio-inicio .geo-gadget-top {margin-bottom:.75rem;}
+    .territorio-inicio .geo-gadget-footer {padding:.6rem 1rem;}
+}
+@media(prefers-reduced-motion:reduce) {
+    .territorio-inicio .geo-gadget,.territorio-inicio .geo-gadget-corner {transition:none;}
+    .territorio-inicio .geo-gadget:hover {transform:none;}
+}

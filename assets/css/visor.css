@@ -1,3 +1,65 @@
-#mapaTerritorio {height:min(70vh,680px);min-height:420px;width:100%;border:1px solid #d7e4db;border-radius:8px;z-index:1}
-#visorResultados {max-height:220px;overflow:auto;position:relative;z-index:10}
-@media(max-width:768px){#mapaTerritorio{height:60vh;min-height:340px}}
+/* Visor cartográfico - NO altera estilos del resto de Territorio */
+.visor-mapa-wrapper { position:relative; }
+#mapaTerritorio { height:min(70vh,700px); min-height:420px; width:100%;
+  border:1px solid #d7e4db; border-radius:8px; z-index:1; }
+#visorResultados {max-height:220px;overflow-y:auto;position:relative;z-index:1000;}
+.visor-leyenda {position:absolute;right:12px;bottom:23px;z-index:500;
+  background:rgba(255,255,255,.96);border:1px solid #d7e4db;border-radius:7px;
+  box-shadow:0 2px 10px rgba(0,0,0,.12);padding:10px 12px;font-size:.82rem;line-height:1.8;pointer-events:none}
+.visor-leyenda strong{display:block;color:#184e45}
+.visor-leyenda small{display:block;color:#606c67}
+.visor-muestra{display:inline-block;width:14px;height:11px;vertical-align:middle;margin-right:5px;border:2px solid}
+.visor-muestra-pendiente{background:rgba(217,154,38,.16);border-color:#d99a26}
+.visor-muestra-validada{background:rgba(40,122,99,.16);border-color:#287a63}
+.visor-popup-dato{margin:.15rem 0;font-size:.85rem}
+.visor-popup-titulo{font-size:1rem;color:#184e45;margin:0 0 .35rem}
+@media(max-width:768px){
+ #mapaTerritorio{height:60vh;min-height:370px}
+ .visor-leyenda{font-size:.72rem;right:7px;bottom:21px;padding:6px 8px}
+}
+
+/* ================================================
+   TERRITORIO - AJUSTES PARA CELULARES
+   Sin modificar la apariencia del resto del módulo
+================================================ */
+.visor-coordenadas { min-width: 0; }
+.visor-coordenadas .form-control { min-width: 0; }
+.visor-acciones .btn { white-space: normal; }
+.visor-card .card-body { min-width: 0; }
+
+@media (max-width: 767.98px) {
+  .visor-header .container-fluid h1 { font-size: 1.4rem; line-height: 1.25; }
+  .visor-header .container-fluid p { font-size: .86rem; line-height: 1.35; }
+  .visor-card .card-body { padding: .75rem !important; }
+  .visor-card .row.g-3 { --bs-gutter-y: .65rem; }
+  .visor-card .form-label { font-size: .88rem; margin-bottom: .3rem; }
+  /* Latitud y longitud ocupan una fila; Consultar pasa a la siguiente. */
+  .visor-coordenadas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem; }
+  .visor-coordenadas > .form-control {
+    width: 100% !important; min-width: 0 !important; border-radius: .45rem !important;
+    height: 44px; font-size: .9rem;
+  }
+  .visor-coordenadas > .btn { grid-column: 1 / -1; width: 100%; min-height: 44px; border-radius: .45rem !important; }
+  /* Botones accesibles con el dedo. */
+  .visor-acciones { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem !important; }
+  .visor-acciones .btn { width: 100%; min-height: 42px; padding: .45rem .25rem; font-size: .79rem; }
+  #visorLimpiarTodo { grid-column: 1 / -1; }
+  #mapaTerritorio { height: 58dvh; min-height: 345px; border-radius: .45rem; }
+  /* Evitar que la leyenda cubra el mapa en la pantalla pequeña. */
+  .visor-leyenda { position: static; margin-top: .5rem; padding: .5rem .7rem; box-shadow: none; font-size: .75rem; pointer-events: auto; }
+  .visor-leyenda strong { margin-bottom: .1rem; }
+  .visor-leyenda small { margin-top: .1rem; }
+  /* Popups compactos y contenido desplazable si hay muchos datos. */
+  #mapaTerritorio .leaflet-popup-content { margin: 10px 12px; font-size: .82rem; line-height: 1.35; }
+  #mapaTerritorio .visor-popup-titulo { font-size: .95rem; line-height: 1.25; }
+  #mapaTerritorio .visor-popup-dato { font-size: .77rem; margin: .12rem 0; }
+  #mapaTerritorio .leaflet-popup-content-wrapper { border-radius: .65rem; }
+  #mapaTerritorio .leaflet-control-layers { font-size: .78rem; }
+  #mapaTerritorio .leaflet-control-layers-toggle { width: 38px; height: 38px; }
+  #mapaTerritorio .leaflet-control-zoom a { width: 36px; height: 36px; line-height: 36px; }
+  #visorResultados { max-height: 155px; }
+}
+@media (max-width: 360px) {
+  .visor-acciones { grid-template-columns: 1fr; }
+  #visorLimpiarTodo { grid-column: auto; }
+}

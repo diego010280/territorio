@@ -5,7 +5,7 @@ final class TerritorioConsulta {
     /** Geometrías MUNICIPALES NO PUBLICADAS en tabla intermedia. */
     public function cartografiaImportada(int $limite = 1000): array {
         $limite = max(1, min(1000, $limite));
-        $sql = 'SELECT id_importacion, nombre_original, clasificacion, estado, id_externo, '
+        $sql = 'SELECT id_importacion, nombre_original, clasificacion, tipo, anio, estado, id_externo, '
              . 'ST_AsGeoJSON(geometria, 6) AS geojson '
              . 'FROM bar_importacion_geometrias '
              . 'ORDER BY id_importacion LIMIT ' . $limite;
@@ -18,6 +18,7 @@ final class TerritorioConsulta {
                 'id_importacion'=>(int)$r['id_importacion'],
                 'nombre'=>$r['nombre_original'], 'clasificacion'=>$r['clasificacion'],
                 'estado'=>$r['estado'], 'id_externo'=>$r['id_externo'],
+                'tipo'=>$r['tipo'], 'anio'=>$r['anio'],
             ]];
         }
         return ['type'=>'FeatureCollection', 'features'=>$features];

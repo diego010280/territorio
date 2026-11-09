@@ -24,7 +24,29 @@ try {
     http_response_code(422);
     echo json_encode(['error'=>$e->getMessage()], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
-    error_log('[territorio] '.$e->getMessage());
-    http_response_code(500);
-    echo json_encode(['error'=>'No se pudo procesar la consulta. Revisar el log del servidor.']);
+     $status = (int) $e->getCode();
+
+    if (!in_array($status, [400, 401, 403, 404, 405], true)) {
+        $status = $e instanceof InvalidArgumentException ? 400 : 500;
+    }
+
+    $codigoError = 'TERR-' . date('Ymd-His')
+        . '-' . bin2hex(random_bytes(3));
+
+    error_log(
+        $codigoError . ' | Propuesta barrio | ' .
+        get_class($e) . ' | ' .
+        $e->getMessage() . ' | ' .
+        $e->getFile() . ':' . $e->getLine()
+    );
+
+    http_response_code($status);
+
+    echo json_encode([
+        'ok' => false,
+        'codigo_error' => $codigoError,
+        'error' => $status === 500
+            ? 'No se pudo registrar la solicitud.'
+            : $e->getMessage()
+    ], JSON_UNESCAPED_UNICODE);
 }

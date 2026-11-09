@@ -24,9 +24,10 @@
 <script src="/territorio/assets/plugins/sweetalert2/sweetalert2.all.min.js"></script>
 
 
-<?php if (($paginaActiva ?? '') === 'visor'): ?>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/territorio/assets/js/visor.js?v=1"></script>
+<?php if (($paginaActiva ?? '') === 'visor' || !empty($cargarLeaflet)): ?>
+<!-- <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script> -->
+<script src="/territorio/assets/plugins/leaflet/leaflet.js"></script>
+<script src="/territorio/assets/js/visor.js?v=5"></script>
 <?php endif; ?>
 <!-- Inicialización del scrollbar lateral -->
 
