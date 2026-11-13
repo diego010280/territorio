@@ -34,6 +34,17 @@ try{
    if($csrf===''||!hash_equals($csrf,$token))throw new RuntimeException('Token CSRF inválido.',403);
    $out=['id_solicitud'=>$service->guardar($data,(int)($_SESSION['usuario_id']??0)),'estado'=>'PENDIENTE'];
  }else throw new RuntimeException('Acción no disponible.',405);
+ // La auditoria ABM del POST guardar se realiza DENTRO de PropuestaBarrios::guardar().
+ // El GET detalle se registra como consulta; autocompletados no se auditan para evitar ruido.
+ if($_SERVER['REQUEST_METHOD']==='GET' && $action==='detalle'){
+   require_once __DIR__.'/../clases/AuditoriaTerritorio.php';
+   $uid=(int)($_SESSION['usuario_id']??0);
+   if($uid>0)(new AuditoriaTerritorio(Conexion::getConexion('BARRIOS')))->registrarAccionSegura([
+     'usuario'=>$uid,'tipo'=>AuditoriaTerritorio::CONSULTA,
+     'observacion'=>'Consulta de datos vigentes para proponer modificacion de barrio',
+     'parametros'=>['id_barrio'=>(int)($_GET['id']??0)],
+   ]);
+ }
  echo json_encode($out,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
 }catch(Throwable $e){
  $status=(int)$e->getCode();if(!in_array($status,[400,401,403,404,405,409],true))$status=$e instanceof InvalidArgumentException?400:500;

@@ -8,8 +8,25 @@ try {
     require_once __DIR__.'/../clases/Autorizacion.php';
     require_once __DIR__.'/../clases/RevisionSolicitudesBarrios.php';
     $auth=new Autorizacion();$auth->exigir('revision_solicitudes_barrios.php','ejec');
+    $accion=(string)($_GET['accion']??'');
+    if($_SERVER['REQUEST_METHOD']==='POST' && $accion==='resolver'){
+        $auth->exigir('revision_solicitudes_barrios.php','modifica');
+        $csrf=(string)($_SESSION['terr_revision_csrf']??'');
+        $token=(string)($_SERVER['HTTP_X_CSRF_TOKEN']??'');
+        if(!$csrf||!hash_equals($csrf,$token))throw new RuntimeException('Token CSRF inválido.',403);
+        $body=file_get_contents('php://input');
+        if(strlen($body)>16000)throw new InvalidArgumentException('Solicitud demasiado extensa.',400);
+        $data=json_decode($body,true,512,JSON_THROW_ON_ERROR);
+        if(!is_array($data))throw new InvalidArgumentException('Formato inválido.',400);
+        require_once __DIR__.'/../clases/ResolucionSolicitudesBarrios.php';
+        $out=(new ResolucionSolicitudesBarrios())->resolver(
+          (int)($data['id_solicitud']??0),(string)($data['decision']??''),
+          (string)($data['motivo']??''),(int)($_SESSION['usuario_id']??0),
+          ($data['confirmacion_geometria']??false)===true);
+        echo json_encode($out,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);exit;
+    }
     if($_SERVER['REQUEST_METHOD']!=='GET')throw new RuntimeException('Método no permitido.',405);
-    $srv=new RevisionSolicitudesBarrios();$accion=(string)($_GET['accion']??'');
+    $srv=new RevisionSolicitudesBarrios();
     if($accion==='listar')$result=['data'=>$srv->listar((string)($_GET['estado']??'PENDIENTE'))];
     elseif($accion==='detalle'){
        $id=filter_input(INPUT_GET,'id',FILTER_VALIDATE_INT);

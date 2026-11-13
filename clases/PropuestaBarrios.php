@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/../config/database.php';
+require_once __DIR__.'/AuditoriaTerritorio.php';
 final class PropuestaBarrios {
     private PDO $db;
     public function __construct(){ $this->db=Conexion::getConexion('BARRIOS'); $this->db->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION); }
@@ -155,6 +156,47 @@ final class PropuestaBarrios {
                 $origen=$this->campo($gcols,['origen']);if($origen){$gnom[]=$origen;$gval[]=':origen';$gp[':origen']='LEAFLET';}
                 $stmt=$this->db->prepare('INSERT INTO db_barrios.bar_solicitudes_geometrias (`'.implode('`,`',$gnom).'`) VALUES ('.implode(',',$gval).')');$stmt->execute($gp);
             }
+            // Auditoria central del NUEVO modelo, con el mismo PDO y la misma transaccion.
+            // La solicitud es una ALTA en bar_solicitudes incluso si propone modificar barrio existente.
+            // La publicacion del cambio se auditara recien al aprobar la solicitud.
+            $correlacion=AuditoriaTerritorio::correlacion();
+            $auditoriaNueva=new AuditoriaTerritorio($this->db);
+            $auditoriaNueva->registrarABM([
+                'usuario'=>$usuario,
+                'tipo'=>AuditoriaTerritorio::ALTA,
+                'tabla'=>'db_barrios.bar_solicitudes',
+                'registro'=>(string)$sid,
+                'correlacion'=>$correlacion,
+                'antes'=>null,
+                'despues'=>[
+                    'id_solicitud'=>$sid,
+                    'id_barrio'=>$id?:null,
+                    'tipo_solicitud'=>$id?'MODIFICACION':'ALTA',
+                    'estado'=>'PENDIENTE',
+                    'nombre'=>$nombre,
+                    'id_localidad'=>$loc,
+                    'clasificacion'=>$clasificacion,
+                    'descripcion'=>$descripcion,
+                    'motivo'=>$motivo,
+                    'version_base'=>$version,
+                    'tiene_geometria_propuesta'=>$wkt!==null
+                ],
+                'observacion'=>'Presentacion de solicitud '.($id?'de modificacion':'de alta').'. Nro '.$sid,
+            ]);
+            if($wkt!==null){
+                $auditoriaNueva->registrarABM([
+                    'usuario'=>$usuario,
+                    'tipo'=>AuditoriaTerritorio::GEOMETRIA,
+                    'tabla'=>'db_barrios.bar_solicitudes_geometrias',
+                    'registro'=>(string)$sid,
+                    'correlacion'=>$correlacion,
+                    'antes'=>null,
+                    'despues'=>['id_solicitud'=>$sid,'estado'=>'PROPUESTA_NO_OFICIAL','srid'=>4326,
+                                'tipo'=>'MULTIPOLYGON','sha256_wkt'=>hash('sha256',$wkt)],
+                    'observacion'=>'Geometria propuesta asociada a solicitud '.$sid,
+                ]);
+            }
+            // Mantener el registro HISTORICO previo, sin perder compatibilidad.
             // Auditoría central en la MISMA transacción: si falla, no queda solicitud parcial.
             $aud=$this->db->prepare('INSERT INTO geoterr.geo_auditoria (modulo,entidad,id_registro,accion,usuario_id,descripcion,datos_anteriores,datos_nuevos,ip,user_agent) VALUES (:modulo,:entidad,:id,:accion,:usuario,:descripcion,:anterior,:nuevo,:ip,:agente)');
             $aud->execute([

@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/../config/database.php';
+require_once __DIR__.'/AuditoriaTerritorio.php';
 final class ColorBarrio {
     private PDO $db;
     public function __construct() { $this->db=Conexion::getConexion('BARRIOS'); }
@@ -27,13 +28,17 @@ final class ColorBarrio {
             if ($anterior!==$color) {
                 $s=$this->db->prepare('UPDATE db_barrios.bar_barrios SET color_mapa=:color WHERE id_barrio=:id');
                 $s->execute([':color'=>$color,':id'=>$id]);
-                $s=$this->db->prepare('INSERT INTO geoterr.geo_auditoria (modulo,entidad,id_registro,accion,usuario_id,descripcion,datos_anteriores,datos_nuevos,ip,user_agent) VALUES (:m,:e,:id,:a,:u,:d,:prev,:next,:ip,:agent)');
-                $s->execute([':m'=>'TERRITORIO',':e'=>'BARRIO_COLOR',':id'=>$id,':a'=>'MODIFICAR_COLOR_MAPA',':u'=>$usuario,
-                    ':d'=>'Cambio de color cartográfico para barrio aprobado '.$b['nombre'],
-                    ':prev'=>json_encode(['color_mapa'=>$anterior],JSON_THROW_ON_ERROR),
-                    ':next'=>json_encode(['color_mapa'=>$color],JSON_THROW_ON_ERROR),
-                    ':ip'=>substr((string)($_SERVER['REMOTE_ADDR']??''),0,45),
-                    ':agent'=>substr((string)($_SERVER['HTTP_USER_AGENT']??''),0,250)]);
+                // Auditoria obligatoria, en la MISMA transaccion que el UPDATE.
+                (new AuditoriaTerritorio($this->db))->registrarABM([
+                    'usuario'=>$usuario,
+                    'tipo'=>AuditoriaTerritorio::CAMBIO_COLOR,
+                    'tabla'=>'db_barrios.bar_barrios',
+                    'registro'=>(string)$id,
+                    'antes'=>['color_mapa'=>$anterior],
+                    'despues'=>['color_mapa'=>$color],
+                    'observacion'=>'Cambio de color cartografico de '.$b['nombre'],
+                    'correlacion'=>AuditoriaTerritorio::correlacion(),
+                ]);
             }
             $this->db->commit();
             return ['ok'=>true,'id_barrio'=>$id,'color_mapa'=>$color,'modificado'=>$anterior!==$color];

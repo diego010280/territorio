@@ -1,7 +1,7 @@
 (()=>{'use strict';document.addEventListener('DOMContentLoaded',()=>{
   const e=id=>document.getElementById(id), endpoint='/territorio/ajax/revision_solicitudes_barrios.php';
   const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let map,vigente,propuesta;
+  let map,vigente,propuesta,solicitudActual=null;
   async function get(accion,params={}){const url=endpoint+'?'+new URLSearchParams({accion,...params});
     const r=await fetch(url,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
     const d=await r.json().catch(()=>({error:'El servidor devolvió una respuesta no JSON.'}));
@@ -38,9 +38,39 @@
       'Polígono vigente en azul y propuesta en naranja. Revisión de solo lectura.';}
   async function detalle(id){e('rsDetalle').classList.remove('d-none');e('rsNumero').textContent='#'+id;
     e('rsMensaje').textContent='Cargando detalle…';try{const r=await get('detalle',{id});
+      solicitudActual=r;
+      if(e('rsResolucion'))e('rsResolucion').classList.toggle('d-none',r.estado!=='PENDIENTE');
+      if(e('rsConfGeo'))e('rsConfGeo').checked=false;
       e('rsResumen').innerHTML=`<strong>${escape(r.nombre_actual||'(Alta nueva)')}</strong> · ${escape(r.tipo_solicitud)} · ${escape(r.estado)} · Versión base ${escape(r.version_base??'—')}`;
       tablaComparacion(r);dibujar(r);e('rsDetalle').scrollIntoView({behavior:'smooth',block:'start'});
     }catch(err){e('rsMensaje').textContent='Error de detalle: '+err.message;}}
+  async function resolver(decision){
+    if(!solicitudActual || solicitudActual.estado!=='PENDIENTE')return;
+    const motivo=e('rsMotivo')?.value.trim()||'';
+    if(motivo.length<10){alert('Ingresá un fundamento de al menos 10 caracteres.');e('rsMotivo')?.focus();return;}
+    const confirmarGeo=e('rsConfGeo')?.checked===true;
+    const txt=decision==='APROBADA'?'APROBAR':'RECHAZAR';
+    if(decision==='APROBADA' && !confirmarGeo && solicitudActual.geometria_propuesta){
+      if(!confirm('¿Aprobar únicamente cambios de datos? Si la geometría difiere, el servidor bloqueará la operación.'))return;
+    }
+    if(!confirm('¿Confirmás '+txt+' la solicitud #'+solicitudActual.id_solicitud+'?'+(confirmarGeo&&decision==='APROBADA'?' Se publicará una NUEVA VERSIÓN de la geometría si los límites difieren.':'')))return;
+    const botones=[e('rsAprobar'),e('rsRechazar')].filter(Boolean);
+    botones.forEach(b=>b.disabled=true);
+    try{
+      const r=await fetch(endpoint+'?accion=resolver',{
+        method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json',
+          'X-CSRF-Token':window.TERR_REVISION?.csrf||''},
+        body:JSON.stringify({id_solicitud:Number(solicitudActual.id_solicitud),decision,motivo,confirmacion_geometria:decision==='APROBADA'&&confirmarGeo})});
+      const d=await r.json().catch(()=>({error:'Respuesta del servidor inválida.'}));
+      if(!r.ok)throw Error(d.error||('HTTP '+r.status));
+      e('rsMensaje').textContent='Solicitud #'+d.id_solicitud+' '+d.estado+'. Auditoría registrada.'+(d.geometria_publicada?' Geometría oficial v'+d.version_oficial+' publicada.':'');
+      if(e('rsMotivo'))e('rsMotivo').value='';
+      await listar();await detalle(d.id_solicitud);
+    }catch(err){e('rsMensaje').textContent='No se guardó la resolución: '+err.message;}
+    finally{botones.forEach(b=>b.disabled=false);}
+  }
+  if(e('rsAprobar'))e('rsAprobar').onclick=()=>resolver('APROBADA');
+  if(e('rsRechazar'))e('rsRechazar').onclick=()=>resolver('RECHAZADA');
   e('rsVerVigente').onchange=()=>{if(map&&vigente){if(e('rsVerVigente').checked)map.addLayer(vigente);else map.removeLayer(vigente);}};
   e('rsVerPropuesta').onchange=()=>{if(map&&propuesta){if(e('rsVerPropuesta').checked)map.addLayer(propuesta);else map.removeLayer(propuesta);}};
   e('rsEstado').onchange=listar;listar();

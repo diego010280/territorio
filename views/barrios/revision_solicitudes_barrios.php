@@ -1,6 +1,6 @@
 <section class="app-content-header"><div class="container-fluid">
 <h1 class="mb-1"><i class="bi bi-clipboard-check me-2"></i>Revisión de Solicitudes de Barrios</h1>
-<p class="text-body-secondary">Comparación de datos y geometrías. Esta fase es de solo lectura; no publica versiones.</p>
+<p class="text-body-secondary">Comparación de datos y geometrías. Resoluciones administrativas auditadas. Permite resolver cambios de datos y publicar una nueva versión de geometría simple con validaciones conservadoras.</p>
 </div></section>
 <section class="app-content"><div class="container-fluid">
 <div class="card shadow-sm mb-3"><div class="card-header d-flex justify-content-between align-items-center gap-2 flex-wrap">
@@ -19,5 +19,22 @@
 <label><input type="checkbox" checked id="rsVerPropuesta"> Propuesta (naranja)</label></div>
 <div id="rsMapa" role="application" aria-label="Comparación cartográfica"></div>
 <div class="form-text">Las geometrías se muestran como capas distintas. No se realizan modificaciones.</div>
-</div></div><div id="rsMensaje" class="small mt-3" role="status"></div></div></div>
+</div></div><div id="rsMensaje" class="small mt-3" role="status"></div>
+<?php if($puedeResolver): ?>
+<div class="border-top mt-3 pt-3" id="rsResolucion">
+  <h6>Resolución administrativa</h6>
+  <label for="rsMotivo" class="form-label">Fundamento de la decisión (obligatorio, mínimo 10 caracteres)</label>
+  <textarea id="rsMotivo" class="form-control mb-2" rows="3" maxlength="2000" placeholder="Explicá el motivo de la aprobación o rechazo"></textarea>
+  <div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" id="rsConfGeo">
+    <label class="form-check-label" for="rsConfGeo"><strong>He revisado la modificación geométrica propuesta y solicito publicar una nueva versión si cambiaron los límites.</strong></label>
+    <div class="form-text">El servidor valida el anillo simple, autointersecciones, SRID y solapamientos con otros barrios oficiales. Los casos complejos se bloquean para validación GIS externa. Esta confirmación no reemplaza la verificación administrativa del límite.</div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-success" id="rsAprobar" type="button"><i class="bi bi-check-circle"></i> Aprobar solicitud</button>
+    <button class="btn btn-outline-danger" id="rsRechazar" type="button"><i class="bi bi-x-circle"></i> Rechazar solicitud</button>
+  </div>
+  <div class="form-text">Si cambia la geometría se genera una nueva versión y la versión anterior pasa a HISTORICO. Se vuelve a verificar la versión base y la geometría en el servidor.</div>
+</div>
+<?php endif; ?></div></div>
 </div></section>
