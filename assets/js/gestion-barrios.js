@@ -34,7 +34,17 @@
         if(p)return '<span class="badge text-bg-warning">Pendiente ('+p+')</span>';
         return '<span class="badge text-bg-secondary">Sin equivalencia validada</span>';
       }},
-      {data:'id_barrio',orderable:false,render:(d,t)=>{ if(t!=='display') return d; const id=Number(d); return '<div class="d-flex flex-wrap gap-1">' + '<button class="btn btn-sm btn-outline-success gb-detalle" data-id="'+id+'" type="button"><i class="bi bi-eye"></i> Ver</button>' + (puedeModificar ? '<a class="btn btn-sm btn-outline-primary" href="propuesta_barrio.php?id='+id+'"><i class="bi bi-pencil-square"></i> Modificar</a>' : '') + '</div>'; }}
+      {data:'color_mapa',orderable:false,searchable:false,render:(d,t,row)=>{
+        if(t!=='display')return d||'';
+        if(row.estado!=='APROBADO'||Number(row.activo)!==1||row.id_gobernante)return '<span class="text-body-secondary">—</span>';
+        const asignado=/^#[0-9A-Fa-f]{6}$/.test(String(d||''));
+        const color=asignado?d.toUpperCase():'#28846A';
+        // Nunca insertar HTML que proceda de la BD sin validar el hexadecimal.
+        return '<span class="d-inline-flex gap-2 align-items-center" title="'+(asignado?'Color asignado':'Color predeterminado')+'">'
+          +'<span style="display:inline-block;width:20px;height:20px;border-radius:5px;border:1px solid #8998A3;background-color:'+color+'"></span>'
+          +'<small class="text-nowrap">'+(asignado?color:'Predeterminado')+'</small></span>';
+      }},
+      {data:'id_barrio',orderable:false,render:(d,t,row)=>{ if(t!=='display') return d; const id=Number(d); return '<div class="d-flex flex-wrap gap-1">' + '<button class="btn btn-sm btn-outline-success gb-detalle" data-id="'+id+'" type="button"><i class="bi bi-eye"></i> Ver</button>' + (puedeModificar ? '<a class="btn btn-sm btn-outline-primary" href="propuesta_barrio.php?id='+id+'"><i class="bi bi-pencil-square"></i> Modificar</a>' : '') + (puedeModificar && row.estado === 'APROBADO' && Number(row.activo) === 1 && !row.id_gobernante ? '<button type="button" class="btn btn-sm btn-outline-secondary gb-color" data-id="'+id+'"><i class="bi bi-palette"></i> Color</button>' : '') + '</div>'; }}
     ],
     order:[[1,'asc']],
     drawCallback:()=>mostrar('Los datos se consultan sin modificarlos. Las geometrías municipales sin vincular no figuran como aprobadas.')
@@ -85,6 +95,84 @@
     .then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json();})
     .then(r=>{localidadesCache=(r.data||[]);for(const v of localidadesCache) {const opt=document.createElement('option');opt.value=v.id;opt.textContent=v.nombre+' (ID '+v.id+')';$('gbLocalidad').appendChild(opt);}})
     .catch(e=>mostrar('No se pudo cargar el filtro de localidades: '+e.message));
+  let barrioColorId=null;
+  let colorGuardado=null;
+  const colorInput=$('gbColorInput'), colorHex=$('gbColorHex'), colorStatus=$('gbColorEstado');
+  const botonGuardar=$('gbColorGuardar');
+  const colorNormalizado=(v)=>String(v||'').toUpperCase();
+  function refrescarGuardarColor(){
+    if(!botonGuardar)return;
+    botonGuardar.disabled=!barrioColorId||colorGuardado===null||colorNormalizado(colorInput.value)===colorGuardado;
+  }
+  colorInput?.addEventListener('input',()=>{
+    colorHex.textContent=colorNormalizado(colorInput.value);
+    refrescarGuardarColor();
+  });
+  function notificarColor(texto,tipo='success') {
+    if(window.Swal?.fire){
+      window.Swal.fire({toast:true,position:'top-end',icon:tipo,title:texto,
+        showConfirmButton:false,timer:2600,timerProgressBar:true});
+    }else{
+      mostrar(texto);
+    }
+  }
+  tablaNodo.addEventListener('click',async ev=>{
+    const btn=ev.target.closest('button.gb-color');if(!btn)return;
+    const id=Number(btn.dataset.id),modalNodo=$('gbColorModal');
+    if(!window.bootstrap?.Modal||!modalNodo)return;
+    barrioColorId=id;colorGuardado=null;
+    botonGuardar.disabled=true;
+    colorStatus.textContent='Consultando…';
+    const modal=bootstrap.Modal.getOrCreateInstance(modalNodo);modal.show();
+    try{
+      const resp=await fetch('/territorio/ajax/color_barrio.php?accion=consultar&id='+id,
+        {credentials:'same-origin',headers:{Accept:'application/json'},cache:'no-store'});
+      const data=await resp.json();if(!resp.ok)throw Error(data.error||'HTTP '+resp.status);
+      if(barrioColorId!==id)return;
+      $('gbColorNombre').textContent=data.nombre+' — ID '+id;
+      colorGuardado=/^#[0-9a-fA-F]{6}$/.test(String(data.color_mapa||''))?
+        colorNormalizado(data.color_mapa):'';
+      colorInput.value=colorGuardado||'#28846A';
+      colorHex.textContent=colorNormalizado(colorInput.value);
+      colorStatus.textContent=colorGuardado?'Color actual cargado. Elegí otro para modificarlo.':'Sin color personalizado. Podés asignar uno.';
+      refrescarGuardarColor();
+    }catch(err){barrioColorId=null;botonGuardar.disabled=true;colorStatus.textContent='Error: '+err.message;}
+  });
+  $('gbColorModal')?.addEventListener('hidden.bs.modal',()=>{
+    barrioColorId=null;colorGuardado=null;
+    botonGuardar.disabled=true;
+    colorStatus.textContent='';
+  });
+  botonGuardar?.addEventListener('click',async()=>{
+    if(!barrioColorId||botonGuardar.disabled)return;
+    const id=barrioColorId, nuevo=colorNormalizado(colorInput.value);
+    botonGuardar.disabled=true;
+    colorStatus.textContent='Guardando y auditando…';
+    try{
+      const resp=await fetch('/territorio/ajax/color_barrio.php?accion=guardar',{
+        method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json',
+          'Accept':'application/json','X-CSRF-Token':$('gbPermisos').dataset.colorCsrf},
+        body:JSON.stringify({id_barrio:id,color_mapa:nuevo})
+      });
+      const data=await resp.json().catch(()=>({error:'Respuesta inválida del servidor'}));
+      if(!resp.ok||!data.ok)throw Error(data.error||'HTTP '+resp.status);
+      colorGuardado=nuevo;
+      // Actualizar la grilla inmediatamente y consultar después al servidor sin perder la página.
+      tabla.rows().every(function(){
+        const fila=this.data();
+        if(Number(fila?.id_barrio)===id){
+          this.data({...fila,color_mapa:data.color_mapa||nuevo});
+        }
+      });
+      tabla.draw(false);
+      bootstrap.Modal.getOrCreateInstance($('gbColorModal')).hide();
+      notificarColor(data.modificado?'Color guardado y auditado correctamente.':'El color ya estaba actualizado.');
+      tabla.ajax.reload(null,false);
+    }catch(err){
+      colorStatus.textContent='No se guardó: '+err.message;
+      refrescarGuardarColor();
+    }
+  });
   tablaNodo.addEventListener('click', async event=>{
     const boton=event.target.closest('button.gb-detalle');if(!boton)return;
     const id=Number(boton.dataset.id);

@@ -44,10 +44,10 @@ final class GestionBarrios {
       $filtrados=(int)$this->ejecutar('SELECT COUNT(*) FROM db_barrios.bar_barrios b'.$where,$bind)->fetchColumn();
       $start=max(0,min(1000000,(int)($args['start']??0)));
       $length=max(5,min(100,(int)($args['length']??10)));
-      $orders=['b.id_barrio','b.nombre','l.localidad_nombre','b.id_origen_dbgral','b.codigo_dependencia_legacy','b.estado','b.id_barrio','b.id_barrio','b.id_barrio'];
+      $orders=['b.id_barrio','b.nombre','l.localidad_nombre','b.id_origen_dbgral','b.codigo_dependencia_legacy','b.estado','b.id_barrio','b.id_barrio','b.id_barrio','b.id_barrio'];
       $n=(int)($args['order'][0]['column']??1);$order=$orders[$n]??'b.nombre';
       $dir=strtolower((string)($args['order'][0]['dir']??'asc'))==='desc'?'DESC':'ASC';
-      $sql="SELECT b.id_barrio,b.nombre,b.estado,b.activo,b.id_origen_dbgral,b.codigo_dependencia_legacy,
+      $sql="SELECT b.id_barrio,b.nombre,b.estado,b.activo,b.color_mapa,b.id_origen_dbgral,b.codigo_dependencia_legacy,
           b.codigo_localidad_legacy,l.localidad_nombre,
           (SELECT MIN(r.id_barrio_destino) FROM db_barrios.bar_relaciones_barrios r WHERE r.id_barrio_origen=b.id_barrio AND r.estado='APROBADA') AS id_gobernante,
           EXISTS(SELECT 1 FROM db_barrios.bar_geometrias g WHERE g.id_barrio=b.id_barrio AND g.estado='APROBADO') AS tiene_geometria,

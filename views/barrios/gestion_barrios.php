@@ -43,15 +43,31 @@
    <span class="badge text-bg-secondary">Consultas y solicitudes · fase 2</span>
   </div>
   <div class="card-body">
-   <div id="gbPermisos" data-puede-modificar="<?= $authBarrios->puede('gestion_barrios.php', 'modifica') ? '1' : '0' ?>" hidden></div>
+   <?php if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+      if (empty($_SESSION['terr_color_csrf'])) $_SESSION['terr_color_csrf'] = bin2hex(random_bytes(32)); ?>
+   <div id="gbPermisos" data-puede-modificar="<?= $authBarrios->puede('gestion_barrios.php', 'modifica') ? '1' : '0' ?>"
+      data-color-csrf="<?= htmlspecialchars($_SESSION['terr_color_csrf'], ENT_QUOTES, 'UTF-8') ?>" hidden></div>
    <div class="table-responsive"><table id="gbTabla" class="table table-hover table-striped align-middle w-100">
-    <thead><tr><th>ID</th><th>Nombre</th><th>Localidad</th><th>Origen DBGRAL</th><th>Jurisdicción histórica</th><th>Estado</th><th>Geometría aprobada</th><th>Vínculo SURC</th><th>Acción</th></tr></thead>
+    <thead><tr><th>ID</th><th>Nombre</th><th>Localidad</th><th>Origen DBGRAL</th><th>Jurisdicción histórica</th><th>Estado</th><th>Geometría aprobada</th><th>Vínculo SURC</th><th>Color</th><th>Acción</th></tr></thead>
     <tbody></tbody>
    </table></div>
    <div id="gbMensaje" class="small text-body-secondary mt-2" role="status" aria-live="polite"></div>
   </div>
  </div>
 </div></div>
+<div class="modal fade" id="gbColorModal" tabindex="-1" aria-labelledby="gbColorTitulo" aria-hidden="true">
+ <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+ <div class="modal-header"><h2 class="modal-title fs-5" id="gbColorTitulo">Color del barrio aprobado</h2><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+ <div class="modal-body">
+  <p id="gbColorNombre" class="fw-semibold mb-2"></p>
+  <label for="gbColorInput" class="form-label">Color de relleno y contorno</label>
+  <div class="d-flex align-items-center gap-2 mb-2"><input id="gbColorInput" type="color" class="form-control form-control-color" value="#28846A" title="Elegir color" aria-label="Color de barrio"><output id="gbColorHex">#28846A</output></div>
+  <p class="small text-body-secondary">El visor usará este color con relleno semitransparente. No modifica la geometría ni su versión.</p>
+  <div id="gbColorEstado" role="status" aria-live="polite" class="small"></div>
+ </div>
+ <div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button><button type="button" id="gbColorGuardar" class="btn btn-success">Guardar color</button></div>
+ </div></div>
+</div>
 <div class="modal fade" id="gbModal" tabindex="-1" aria-labelledby="gbModalTitulo" aria-hidden="true">
  <div class="modal-dialog modal-dialog-scrollable modal-lg"><div class="modal-content">
  <div class="modal-header"><h2 class="modal-title fs-5" id="gbModalTitulo">Detalle de barrio</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
