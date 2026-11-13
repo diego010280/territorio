@@ -1,7 +1,7 @@
 <?php declare(strict_types=1); ?>
 <div class="app-content-header"><div class="container-fluid">
  <h1 class="mb-1"><i class="bi bi-houses me-2"></i>Administración de Barrios</h1>
- <p class="text-body-secondary mb-0">Catálogo histórico y trazabilidad territorial · consulta de solo lectura</p>
+ <p class="text-body-secondary mb-0">Catálogo territorial y trazabilidad histórica</p>
 </div></div>
 <div class="app-content"><div class="container-fluid">
  <div class="d-flex align-items-center flex-wrap justify-content-between gap-2 mb-3">
@@ -19,6 +19,17 @@
     <div class="col-12 col-md-5"><label for="gbNombre" class="form-label">Nombre</label><input id="gbNombre" class="form-control" type="search" placeholder="Nombre del barrio" maxlength="120" autocomplete="off" aria-controls="gbNombreResultados"><div id="gbNombreResultados" class="list-group geo-autocomplete" role="listbox"></div></div>
     <div class="col-12 col-md-4"><label for="gbLocalidad" class="form-label">Localidad</label><input id="gbLocalidadBusqueda" class="form-control mb-1" type="search" placeholder="Buscar localidad..." autocomplete="off" aria-controls="gbLocalidadResultados"><div id="gbLocalidadResultados" class="list-group geo-autocomplete" role="listbox"></div><select id="gbLocalidad" class="form-select"><option value="">Todas las localidades</option></select></div>
     <div class="col-12 col-md-3"><label for="gbEstado" class="form-label">Estado</label><select id="gbEstado" class="form-select"><option value="">Todos</option><option value="IMPORTADO">Importado</option><option value="PENDIENTE">Pendiente</option><option value="APROBADO">Aprobado</option><option value="RECHAZADO">Rechazado</option></select></div>
+   </div>
+   <div class="row g-3 mt-1">
+     <div class="col-12 col-md-5">
+       <label for="gbVista" class="form-label">Visualización del catálogo</label>
+       <select id="gbVista" class="form-select">
+         <option value="principales">Barrios principales y no consolidados</option>
+         <option value="historicos">Solo históricos consolidados</option>
+         <option value="todos">Todos los registros (administración)</option>
+       </select>
+       <div class="form-text">Los históricos aprobados se consultan desde el gobernante; nunca se eliminan.</div>
+     </div>
    </div>
    <div class="d-flex gap-2 flex-wrap mt-3">
     <button class="btn btn-success" id="gbBuscar" type="button"><i class="bi bi-search me-1"></i>Buscar</button>

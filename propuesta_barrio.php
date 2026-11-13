@@ -23,5 +23,5 @@ require_once __DIR__.'/templates/menu.php';
 <script>window.APP_BASE_URL='/territorio';</script>
 <?php require_once __DIR__.'/templates/footer.php'; require_once __DIR__.'/templates/scripts.php'; ?>
 <!-- Leaflet: si ya se carga desde templates/scripts.php, no duplicar. -->
-<script src="/territorio/assets/js/propuesta-barrio.js?v=5"></script>
+<script src="/territorio/assets/js/propuesta-barrio.js?v=7"></script>
 </body></html>

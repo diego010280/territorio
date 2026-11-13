@@ -14,6 +14,15 @@ try{
  }elseif($_SERVER['REQUEST_METHOD']==='GET'&&$action==='coincidencias'){
    $auth->exigir('gestion_barrios.php','ejec');$q=trim((string)($_GET['q']??''));if(mb_strlen($q)<2)throw new InvalidArgumentException('Ingresar al menos dos caracteres.');
    $out=['data'=>$service->coincidencias(mb_substr($q,0,80))];
+ }elseif($_SERVER['REQUEST_METHOD']==='GET'&&$action==='municipales_buscar'){
+   $auth->exigir('gestion_barrios.php','ejec');
+   $out=['data'=>$service->buscarMunicipales((string)($_GET['q']??''))];
+ }elseif($_SERVER['REQUEST_METHOD']==='GET'&&$action==='municipal_geometria'){
+   $auth->exigir('gestion_barrios.php','ejec');
+   $id=filter_input(INPUT_GET,'id',FILTER_VALIDATE_INT);
+   if(!$id||$id<1)throw new InvalidArgumentException('Identificador municipal inválido.');
+   $out=$service->geometriaMunicipal((int)$id);
+   if(!$out)throw new RuntimeException('Geometría municipal no encontrada.',404);
  }elseif($_SERVER['REQUEST_METHOD']==='GET'&&$action==='detalle'){
    $auth->exigir('gestion_barrios.php','modifica');$id=filter_input(INPUT_GET,'id',FILTER_VALIDATE_INT);if(!$id||$id<1)throw new InvalidArgumentException('ID inválido.');
    $out=$service->detalle((int)$id);if(!$out)throw new RuntimeException('Barrio inexistente.',404);
@@ -27,7 +36,7 @@ try{
  }else throw new RuntimeException('Acción no disponible.',405);
  echo json_encode($out,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
 }catch(Throwable $e){
- $status=(int)$e->getCode();if(!in_array($status,[400,401,403,404,405],true))$status=$e instanceof InvalidArgumentException?400:500;
+ $status=(int)$e->getCode();if(!in_array($status,[400,401,403,404,405,409],true))$status=$e instanceof InvalidArgumentException?400:500;
  http_response_code($status);error_log('Territorio propuesta barrio: '.$e->getMessage());
  echo json_encode(['error'=>$status===500?'Error al registrar o consultar. Verificar estructura de tablas y logs PHP.':$e->getMessage()],JSON_UNESCAPED_UNICODE);
 }

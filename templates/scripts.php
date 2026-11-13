@@ -27,7 +27,7 @@
 <?php if (($paginaActiva ?? '') === 'visor' || !empty($cargarLeaflet)): ?>
 <!-- <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script> -->
 <script src="/territorio/assets/plugins/leaflet/leaflet.js"></script>
-<script src="/territorio/assets/js/visor.js?v=5"></script>
+<script src="/territorio/assets/js/visor.js?v=6"></script>
 <?php endif; ?>
 <!-- Inicialización del scrollbar lateral -->
 

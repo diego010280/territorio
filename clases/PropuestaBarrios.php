@@ -19,12 +19,61 @@ final class PropuestaBarrios {
         $st=$this->db->prepare($sql);$st->execute([':q'=>'%'.$q.'%']);
         return $st->fetchAll(PDO::FETCH_ASSOC);
     }
+    /** Edición: recupera únicamente geometría oficial vigente del gobernante. */
     public function detalle(int $id):?array {
-        $s=$this->db->prepare('SELECT b.id_barrio,b.id_localidad,b.nombre,b.clasificacion,b.descripcion,l.localidad_nombre FROM db_barrios.bar_barrios b LEFT JOIN db_gral.localidades l ON l.localidad_id=b.id_localidad WHERE b.id_barrio=:id LIMIT 1');
+        $s=$this->db->prepare('SELECT b.id_barrio,b.id_localidad,b.nombre,b.clasificacion,b.descripcion,b.estado,l.localidad_nombre FROM db_barrios.bar_barrios b LEFT JOIN db_gral.localidades l ON l.localidad_id=b.id_localidad WHERE b.id_barrio=:id LIMIT 1');
         $s->execute([':id'=>$id]);$r=$s->fetch(PDO::FETCH_ASSOC);if(!$r)return null;
-        $s=$this->db->prepare("SELECT ST_AsGeoJSON(geometria) geo FROM db_barrios.bar_geometrias WHERE id_barrio=:id AND estado='APROBADO' ORDER BY version DESC LIMIT 1");
-        $s->execute([':id'=>$id]);$geo=$s->fetchColumn();$r['geometry']=$geo?json_decode((string)$geo,true):null;return $r;
+        $s=$this->db->prepare("SELECT id_barrio_destino FROM db_barrios.bar_relaciones_barrios WHERE id_barrio_origen=:id AND estado='APROBADA' ORDER BY id_relacion LIMIT 1");
+        $s->execute([':id'=>$id]);$gob=$s->fetchColumn();
+        if($gob)throw new RuntimeException('Este registro es histórico consolidado. Modificá el barrio gobernante ID '.$gob.'.',409);
+        $s=$this->db->prepare("SELECT id_geometria,version,origen,ST_SRID(geometria) AS srid,ST_AsGeoJSON(geometria) AS geo FROM db_barrios.bar_geometrias WHERE id_barrio=:id AND estado='APROBADO' ORDER BY version DESC,id_geometria DESC LIMIT 1");
+        $s->execute([':id'=>$id]);$geo=$s->fetch(PDO::FETCH_ASSOC);
+        $r['geometry']=$geo?json_decode((string)$geo['geo'],true,512,JSON_THROW_ON_ERROR):null;
+        $r['geometria_oficial']=$geo?[
+            'id_geometria'=>(int)$geo['id_geometria'],
+            'version'=>(int)$geo['version'],
+            'origen'=>(string)$geo['origen'],
+            'srid'=>(int)$geo['srid'],
+            'estado'=>'APROBADO'
+        ]:null;
+        return $r;
     }
+    /**
+     * Busca geometrías municipales como candidatas; no las vincula con el barrio.
+     */
+    public function buscarMunicipales(string $q): array {
+        $q = trim($q);
+        if (mb_strlen($q) < 2 || mb_strlen($q) > 100) {
+            throw new InvalidArgumentException('Escribí entre 2 y 100 caracteres.');
+        }
+        $s = $this->db->prepare(
+            "SELECT id_importacion, id_externo, nombre_original, clasificacion, tipo, estado
+             FROM db_barrios.bar_importacion_geometrias
+             WHERE nombre_original LIKE :texto OR id_externo = :codigo
+             ORDER BY nombre_original, id_importacion LIMIT 25"
+        );
+        $s->execute([':texto'=>'%'.$q.'%', ':codigo'=>$q]);
+        return $s->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Solo lectura: devuelve una geometría municipal sin marcarla como validada.
+     */
+    public function geometriaMunicipal(int $idImportacion): ?array {
+        $s = $this->db->prepare(
+            "SELECT id_importacion, id_externo, nombre_original, clasificacion, tipo,
+                    estado, ST_AsGeoJSON(geometria) AS geojson
+             FROM db_barrios.bar_importacion_geometrias
+             WHERE id_importacion = :id LIMIT 1"
+        );
+        $s->execute([':id'=>$idImportacion]);
+        $r=$s->fetch(PDO::FETCH_ASSOC);
+        if (!$r) return null;
+        $r['geometry']=json_decode((string)$r['geojson'], true, 512, JSON_THROW_ON_ERROR);
+        unset($r['geojson']);
+        return $r;
+    }
+
     private function cols(string $tabla):array {
         $s=$this->db->query('SHOW COLUMNS FROM db_barrios.`'.$tabla.'`');$out=[];
         foreach($s->fetchAll(PDO::FETCH_ASSOC) as $r) $out[$r['Field']]=$r;
@@ -67,7 +116,15 @@ final class PropuestaBarrios {
             $version=0;
             if($id){
                 $s=$this->db->prepare('SELECT id_barrio FROM db_barrios.bar_barrios WHERE id_barrio=:id FOR UPDATE');$s->execute([':id'=>$id]);if(!$s->fetchColumn())throw new InvalidArgumentException('Barrio inexistente.');
-                $s=$this->db->prepare('SELECT COALESCE(MAX(version),0) FROM db_barrios.bar_geometrias WHERE id_barrio=:id');$s->execute([':id'=>$id]);$version=(int)$s->fetchColumn();
+                // Evitar edición directa de históricos ya consolidados.
+                $s=$this->db->prepare("SELECT id_barrio_destino FROM db_barrios.bar_relaciones_barrios WHERE id_barrio_origen=:id AND estado='APROBADA' LIMIT 1");
+                $s->execute([':id'=>$id]);$gob=$s->fetchColumn();
+                if($gob)throw new RuntimeException('Este barrio histórico pertenece al gobernante ID '.$gob.'.',409);
+                // Evitar guardar propuesta basada en una versión oficial ya reemplazada.
+                $s=$this->db->prepare("SELECT COALESCE(MAX(version),0) FROM db_barrios.bar_geometrias WHERE id_barrio=:id AND estado='APROBADO'");
+                $s->execute([':id'=>$id]);$version=(int)$s->fetchColumn();
+                if(!array_key_exists('version_base',$d) || !is_numeric($d['version_base']) || (int)$d['version_base']!==$version)
+                    throw new RuntimeException('La versión oficial cambió o no fue verificada. Recargá el formulario antes de presentar.',409);
             }
             $cols=$this->cols('bar_solicitudes');
             $nom=['id_barrio','tipo_solicitud','estado','datos_propuestos'];$vals=[':barrio',':tipo',':estado',':datos'];
@@ -98,6 +155,17 @@ final class PropuestaBarrios {
                 $origen=$this->campo($gcols,['origen']);if($origen){$gnom[]=$origen;$gval[]=':origen';$gp[':origen']='LEAFLET';}
                 $stmt=$this->db->prepare('INSERT INTO db_barrios.bar_solicitudes_geometrias (`'.implode('`,`',$gnom).'`) VALUES ('.implode(',',$gval).')');$stmt->execute($gp);
             }
+            // Auditoría central en la MISMA transacción: si falla, no queda solicitud parcial.
+            $aud=$this->db->prepare('INSERT INTO geoterr.geo_auditoria (modulo,entidad,id_registro,accion,usuario_id,descripcion,datos_anteriores,datos_nuevos,ip,user_agent) VALUES (:modulo,:entidad,:id,:accion,:usuario,:descripcion,:anterior,:nuevo,:ip,:agente)');
+            $aud->execute([
+                ':modulo'=>'TERRITORIO', ':entidad'=>'SOLICITUD_BARRIO', ':id'=>$sid,
+                ':accion'=>$id?'PROPONER_MODIFICACION':'PROPONER_ALTA', ':usuario'=>$usuario,
+                ':descripcion'=>$motivo,
+                ':anterior'=>json_encode(['id_barrio'=>$id?:null,'version_oficial_base'=>$version],JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),
+                ':nuevo'=>json_encode(['id_solicitud'=>$sid,'id_barrio'=>$id?:null,'estado'=>'PENDIENTE','nombre'=>$nombre,'id_localidad'=>$loc,'clasificacion'=>$clasificacion,'tiene_geometria'=>$wkt!==null],JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),
+                ':ip'=>substr((string)($_SERVER['REMOTE_ADDR']??''),0,45),
+                ':agente'=>substr((string)($_SERVER['HTTP_USER_AGENT']??''),0,250)
+            ]);
             $this->db->commit();return $sid;
         }catch(Throwable $e){if($this->db->inTransaction())$this->db->rollBack();throw $e;}
     }

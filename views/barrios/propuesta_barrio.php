@@ -35,6 +35,28 @@ if (empty($_SESSION['geo_csrf'])) $_SESSION['geo_csrf'] = bin2hex(random_bytes(3
 <label class="btn btn-outline-dark mb-0" for="pbArchivo"><i class="bi bi-upload me-1"></i>Importar GeoJSON</label>
 <input type="file" id="pbArchivo" class="visually-hidden" accept=".json,.geojson,application/json">
 </div>
+<section class="border rounded p-2 mb-2" aria-label="Cartografía municipal de referencia">
+  <label for="pbBuscarMunicipal" class="form-label mb-1 fw-semibold">Recuperar polígono municipal (preliminar)</label>
+  <div class="input-group input-group-sm">
+    <input id="pbBuscarMunicipal" class="form-control" type="search" autocomplete="off"
+           placeholder="Buscar por nombre municipal o código">
+    <button type="button" id="pbBuscarMunicipalBtn" class="btn btn-outline-success">
+      <i class="bi bi-search me-1"></i>Buscar
+    </button>
+  </div>
+  <div id="pbMunicipalesResultados" class="list-group mt-2" aria-live="polite"></div>
+  <div id="pbMunicipalInfo" class="small text-body-secondary mt-2">
+    Seleccioná un resultado para previsualizar; luego elegí «Usar como propuesta».
+    La geometría municipal original no será modificada ni vinculada automáticamente.
+  </div>
+  <button type="button" id="pbUsarMunicipal" class="btn btn-sm btn-success mt-2" disabled>
+    <i class="bi bi-pencil-square me-1"></i>Usar como propuesta y editar
+  </button>
+  <button type="button" id="pbCerrarMunicipal" class="btn btn-sm btn-outline-secondary mt-2" disabled>
+    Quitar previsualización
+  </button>
+</section>
+<div id="pbOficialInfo" class="alert alert-info small mb-2" role="status" aria-live="polite" hidden></div>
 <div id="pbModoActual" class="geo-modo-actual mb-2" role="status" aria-live="polite">Modo: consulta · Para comenzar, elegí Dibujar</div>
 <div class="small text-body-secondary mb-2" id="pbAyudaEdicion">Dibujar: tocá el mapa para agregar puntos. Una vez cerrado, usá Editar vértices para mover, agregar o quitar puntos.</div><div id="pbMapa"></div><div id="pbGeoEstado" class="small text-body-secondary mt-2">Dibujá un polígono o importá GeoJSON. KML/KMZ se incorporará en otra etapa.</div>
 </div></div></div>

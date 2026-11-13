@@ -11,12 +11,13 @@
   const texto=(valor)=> valor===null || valor===undefined || valor===''?'—':String(valor);
   const celda=(valor)=>{ const span=document.createElement('span'); span.textContent=texto(valor); return span.outerHTML; };
   const puedeModificar=$('gbPermisos')?.dataset.puedeModificar === '1';
+  let idElegido='';
   const tabla=new DataTable(tablaNodo,{
     serverSide:true, processing:true, searching:false, responsive:false,
     pageLength:10,lengthMenu:[10,25,50,100],
     language:{emptyTable:'No hay barrios',processing:'Consultando...',zeroRecords:'Sin resultados',info:'Mostrando _START_ a _END_ de _TOTAL_',infoEmpty:'No hay registros',infoFiltered:'(de _MAX_ en total)',lengthMenu:'Mostrar _MENU_',paginate:{first:'Primera',last:'Última',next:'Siguiente',previous:'Anterior'}},
     ajax:{url, type:'GET', data:(d)=>{
-      d.accion='listar';d.nombre=$('gbNombre').value.trim();d.localidad=$('gbLocalidad').value;d.estado=$('gbEstado').value;
+      d.accion='listar';d.nombre=$('gbNombre').value.trim();d.localidad=$('gbLocalidad').value;d.estado=$('gbEstado').value;d.vista=$('gbVista').value;d.id_barrio=idElegido;
     },error:(xhr)=>mostrar('No se pudo obtener la lista (HTTP '+xhr.status+'). Revisá permisos y consola.')},
     columns:[
       {data:'id_barrio',render:(d,t)=>t==='display'?celda(d):d},
@@ -39,24 +40,25 @@
     drawCallback:()=>mostrar('Los datos se consultan sin modificarlos. Las geometrías municipales sin vincular no figuran como aprobadas.')
   });
   $('gbBuscar').addEventListener('click',()=>tabla.ajax.reload());
+  $('gbVista').addEventListener('change',()=>{ idElegido=''; $('gbNombreResultados').replaceChildren();tabla.ajax.reload(); });
   $('gbNombre').addEventListener('keydown',e=>{if(e.key==='Enter')tabla.ajax.reload();});
   $('gbLimpiar').addEventListener('click',()=>{
-    $('gbNombre').value='';$('gbLocalidad').value='';$('gbLocalidadBusqueda').value='';$('gbEstado').value='';$('gbNombreResultados').replaceChildren();$('gbLocalidadResultados').replaceChildren();tabla.ajax.reload();
+    $('gbNombre').value='';idElegido='';$('gbVista').value='principales';$('gbLocalidad').value='';$('gbLocalidadBusqueda').value='';$('gbEstado').value='';$('gbNombreResultados').replaceChildren();$('gbLocalidadResultados').replaceChildren();tabla.ajax.reload();
   });
   // Buscadores contextuales: muestran coincidencia y localidad antes de elegir.
   let timerB=null,tokenB=0;
   $('gbNombre').addEventListener('input',()=>{
-    clearTimeout(timerB);const q=$('gbNombre').value.trim();const destino=$('gbNombreResultados');destino.replaceChildren();const token=++tokenB;
+    clearTimeout(timerB);idElegido='';const q=$('gbNombre').value.trim();const destino=$('gbNombreResultados');destino.replaceChildren();const token=++tokenB;
     if(q.length<2)return;
     timerB=setTimeout(async()=>{
       try{
-        const r=await fetch(url+'?accion=sugerencias&q='+encodeURIComponent(q),{credentials:'same-origin'});
+        const r=await fetch(url+'?accion=sugerencias&q='+encodeURIComponent(q)+'&vista='+encodeURIComponent($('gbVista').value),{credentials:'same-origin'});
         const v=await r.json();if(!r.ok)throw Error(v.error||'HTTP '+r.status);if(token!==tokenB)return;
         (v.data||[]).forEach(f=>{
           const b=document.createElement('button');b.type='button';b.className='list-group-item list-group-item-action text-start';
-          b.textContent=f.nombre+' — '+(f.localidad_nombre||'Sin localidad')+' (ID barrio '+f.id_barrio+')';
+          b.textContent=f.nombre+' — '+(f.localidad_nombre||'Sin localidad')+' (ID barrio '+f.id_barrio+')'+(f.coincidencia_historica?' · Histórico: '+f.coincidencia_historica:'');
           b.addEventListener('click',()=>{
-            $('gbNombre').value=f.nombre;
+            $('gbNombre').value=f.nombre;idElegido=String(f.id_barrio);
             // Si la localidad figura en el filtro se selecciona; así evitamos homónimos.
             if(f.id_localidad && ![...$('gbLocalidad').options].some(o=>o.value===String(f.id_localidad))) {
               const o=new Option(f.localidad_nombre||'Localidad',String(f.id_localidad));$('gbLocalidad').add(o);
@@ -105,7 +107,13 @@
         else filas.forEach(f=>{const li=document.createElement('li');li.className='list-group-item';li.textContent=toText(f);ul.appendChild(li);});
         cuerpo.appendChild(ul);
       }
-      listado('Jurisdicciones históricas',b.jurisdicciones,f=>'Organismo '+f.gen_organismos_id+' · '+(Number(f.es_actual)?'actual verificada':'vigencia sin confirmar'));
+      listado('Barrios históricos asociados',b.historicos_asociados,f=>
+        f.id_barrio+' — '+f.nombre+' · '+f.tipo_relacion+' · DBGRAL '+texto(f.id_origen_dbgral));
+      listado('Gobernante asociado (si este registro es histórico)',b.gobernantes,f=>
+        f.id_barrio+' — '+f.nombre);
+      listado('Jurisdicciones registradas',b.jurisdicciones,f=>(f.nombre_dependencia||'Organismo')+
+        ' · ID '+f.gen_organismos_id+' · '+(Number(f.es_actual)?'vigente confirmada':'vigencia territorial sin confirmar'));
+
       listado('Equivalencias SURC (solo VALIDADA habilita cruces con denuncias)',b.equivalencias_surc,f=>
         'Código SURC '+f.barrio_codigo_surc+' · '+(f.nombre_surc||'Sin nombre')+' · Localidad SURC '+(f.localidad_surc||'?')+' · '+f.estado);
       listado('Versiones geométricas',b.geometrias,f=>'Versión '+f.version+' · '+f.estado+' · '+f.origen);

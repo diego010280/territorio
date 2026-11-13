@@ -1,0 +1,9 @@
+.cb-resultados{max-height:210px;overflow:auto;position:relative;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.cb-resultados .list-group-item{font-size:.9rem}
+#cbElegidos .cb-elegido{border:1px solid #bedac8;border-radius:8px;background:#eaf5ef;padding:7px 10px;color:#184e45;font-size:.85rem}
+#cbElegidos button{border:0;background:transparent;color:#b42318;margin-left:8px}
+@media(max-width:768px){.cb-resultados{max-height:160px}}
+
+/* Validación puntual, compatible con Bootstrap 5 */
+#cbForm .is-invalid{border-color:#dc3545!important;box-shadow:0 0 0 .12rem rgba(220,53,69,.12)}
+#cbForm .cb-error{font-size:.82rem;}

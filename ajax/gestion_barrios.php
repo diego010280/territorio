@@ -14,7 +14,7 @@ try {
     elseif ($accion==='sugerencias') {
         $q=trim((string)($_GET['q']??''));
         if(mb_strlen($q)<2)throw new InvalidArgumentException('Ingrese dos caracteres',400);
-        $out=['data'=>$obj->sugerencias(mb_substr($q,0,80))];
+        $out=['data'=>$obj->sugerencias(mb_substr($q,0,80),(string)($_GET['vista']??'principales'))];
     }
     elseif ($accion==='localidades') $out=['data'=>$obj->localidades()];
     elseif ($accion==='detalle') {

@@ -13,13 +13,32 @@ if (empty($_SESSION['usuario_id']) || empty($_SESSION['moduleid'])) {
 }
 require_once dirname(__DIR__) . '/config/database.php';
 require_once dirname(__DIR__) . '/clases/TerritorioConsulta.php';
+require_once dirname(__DIR__) . '/clases/VisorOficial.php';
 try {
     // Ajustar la clave según config/config.php (sin cambiar contraseñas).
     $db = Conexion::getConexion('BARRIOS');
     $consulta = new TerritorioConsulta($db);
+    $oficial = new VisorOficial($db);
     $accion = $_GET['accion'] ?? 'cartografia';
     if ($accion === 'cartografia') {
         $resultado = $consulta->cartografiaImportada();
+        // Excluir duplicados municipales únicamente de la vista, no de la BD.
+        $ocultos = array_flip($oficial->idsMunicipalesPublicados());
+        if (isset($resultado['features']) && is_array($resultado['features'])) {
+            $resultado['features'] = array_values(array_filter(
+                $resultado['features'],
+                static fn(array $f): bool => !isset($ocultos[(int)($f['properties']['id_importacion'] ?? 0)])
+            ));
+        }
+    } elseif ($accion === 'oficiales') {
+        $resultado = $oficial->cartografia();
+    } elseif ($accion === 'punto_oficial') {
+        $lat = filter_input(INPUT_GET, 'lat', FILTER_VALIDATE_FLOAT);
+        $lon = filter_input(INPUT_GET, 'lon', FILTER_VALIDATE_FLOAT);
+        if ($lat === false || $lat === null || $lon === false || $lon === null) {
+            throw new InvalidArgumentException('Coordenadas inválidas');
+        }
+        $resultado = ['resultados' => $oficial->buscarPunto($lat,$lon)];
     } elseif ($accion === 'punto') {
         $lat = filter_input(INPUT_GET, 'lat', FILTER_VALIDATE_FLOAT);
         $lon = filter_input(INPUT_GET, 'lon', FILTER_VALIDATE_FLOAT);
