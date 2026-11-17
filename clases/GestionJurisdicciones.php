@@ -18,7 +18,8 @@ final class GestionJurisdicciones {
               LEFT JOIN geoterr.geo_jurisdicciones_rrhh v
                 ON v.id_organismo_rrhh=o.GEN_ORGANISMOS_Id AND v.estado IN('PROPUESTO','VALIDADO')
               LEFT JOIN geoterr.geo_jurisdicciones j ON j.id_jurisdiccion=v.id_jurisdiccion AND j.activo=1
-              WHERE o.GEN_Organismos_Descripcion LIKE :term OR CAST(o.GEN_ORGANISMOS_Id AS CHAR)=:exact
+              WHERE o.GEN_Organismos_categ_Id IN (52,53,54,55,56)
+                AND (o.GEN_Organismos_Descripcion LIKE :term OR CAST(o.GEN_ORGANISMOS_Id AS CHAR)=:exact)
               ORDER BY o.GEN_Organismos_Descripcion LIMIT 35";
         $s=$this->db->prepare($sql);
         $s->execute([':term'=>'%'.$texto.'%',':exact'=>$texto]);
@@ -39,6 +40,40 @@ final class GestionJurisdicciones {
         $s->execute([':filtro'=>$texto,':nombre'=>'%'.$texto.'%',':codigo'=>$texto]);
         return $s->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /** Datos en SOLO LECTURA. BORRADOR es orientativo y nunca es oficial. */
+    public function capas(string $estado='APROBADO', ?int $id=null, int $limite=200): array {
+        if(!in_array($estado,['APROBADO','BORRADOR'],true)) throw new InvalidArgumentException('Estado no permitido.',400);
+        $limite=max(1,min(250,$limite));
+        $sql="SELECT j.id_jurisdiccion,j.tipo,j.nombre,j.numero_ddp,j.codigo_externo,j.estado AS estado_juris,
+                 j.color_mapa,g.id_geometria,g.version,g.estado AS estado_geometria,
+                 ST_AsGeoJSON(g.geometria) AS geojson, ST_SRID(g.geometria) AS srid,
+                 (SELECT MIN(v.id_organismo_rrhh) FROM geoterr.geo_jurisdicciones_rrhh v
+                  WHERE v.id_jurisdiccion=j.id_jurisdiccion AND v.estado IN('PROPUESTO','VALIDADO')) AS id_rrhh
+              FROM geoterr.geo_jurisdicciones_geometrias g
+              JOIN geoterr.geo_jurisdicciones j ON j.id_jurisdiccion=g.id_jurisdiccion
+              WHERE g.estado=:estado AND j.activo=1 ";
+        $args=[':estado'=>$estado];
+        if($estado==='APROBADO') $sql.=" AND j.estado='APROBADO' ";
+        if($id!==null) {$sql.=" AND j.id_jurisdiccion=:id ";$args[':id']=$id;}
+        $sql.=" AND g.version=(SELECT MAX(g2.version) FROM geoterr.geo_jurisdicciones_geometrias g2
+                  WHERE g2.id_jurisdiccion=g.id_jurisdiccion AND g2.estado=g.estado)
+                 ORDER BY j.tipo,j.nombre LIMIT ".$limite;
+        $stmt=$this->db->prepare($sql);$stmt->execute($args);
+        $features=[];
+        foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $geom=json_decode((string)$r['geojson'],true);
+            if(!is_array($geom)||!isset($geom['type']))continue;
+            $features[]=['type'=>'Feature','geometry'=>$geom,'properties'=>[
+                'id_jurisdiccion'=>(int)$r['id_jurisdiccion'],'id_geometria'=>(int)$r['id_geometria'],
+                'nombre'=>$r['nombre'],'tipo'=>$r['tipo'],'numero_ddp'=>$r['numero_ddp'],
+                'id_rrhh'=>$r['id_rrhh'],'codigo_externo'=>$r['codigo_externo'],
+                'estado'=>$r['estado_geometria'],'version'=>(int)$r['version'],
+                'color_mapa'=>$r['color_mapa'],'srid'=>(int)$r['srid']]];
+        }
+        return ['type'=>'FeatureCollection','features'=>$features];
+    }
+
     public function crearDesdeRRHH(int $idRRHH,int $usuario): array {
         if($idRRHH<1||$usuario<1)throw new InvalidArgumentException('ID RRHH o usuario inválido.',400);
         $aud=new AuditoriaTerritorio($this->db);
@@ -47,6 +82,7 @@ final class GestionJurisdicciones {
             $s=$this->db->prepare('SELECT GEN_ORGANISMOS_Id,GEN_Organismos_Descripcion,GEN_Organismos_categ_Id,GEN_Organismos_Activo FROM rrhh.gen_organismos WHERE GEN_ORGANISMOS_Id=? LIMIT 1');
             $s->execute([$idRRHH]);$r=$s->fetch(PDO::FETCH_ASSOC);
             if(!$r)throw new RuntimeException('Organismo inexistente en RRHH.',404);
+            if(!in_array((int)$r['GEN_Organismos_categ_Id'],[52,53,54,55,56],true)) throw new RuntimeException('Solo se permiten categorías RRHH 52, 53, 54, 55 y 56.',403);
             $s=$this->db->prepare("SELECT j.id_jurisdiccion FROM geoterr.geo_jurisdicciones_rrhh v JOIN geoterr.geo_jurisdicciones j ON j.id_jurisdiccion=v.id_jurisdiccion WHERE v.id_organismo_rrhh=? AND v.estado IN('PROPUESTO','VALIDADO') AND j.activo=1 LIMIT 1 FOR UPDATE");
             $s->execute([$idRRHH]);$exist=$s->fetchColumn();
             if($exist) throw new RuntimeException('El organismo ya está vinculado con una jurisdicción activa ID '.$exist,409);

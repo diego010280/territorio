@@ -13,6 +13,13 @@ try {
  if($_SERVER['REQUEST_METHOD']==='GET') {
    if($accion==='buscar_rrhh')$result=['data'=>$srv->buscarRRHH((string)($_GET['q']??''))];
    elseif($accion==='listar')$result=['data'=>$srv->listar((string)($_GET['q']??''))];
+   elseif($accion==='capas') {
+     $estado=(string)($_GET['estado']??'APROBADO');
+     if($estado==='BORRADOR')$auth->exigir('gestion_jurisdicciones.php','ejec');
+     $id=isset($_GET['id']) ? filter_var($_GET['id'],FILTER_VALIDATE_INT) : null;
+     if($id===false||($id!==null&&$id<1))throw new InvalidArgumentException('ID inválido.',400);
+     $result=$srv->capas($estado,$id,200);
+   }
    else throw new InvalidArgumentException('Acción desconocida.',400);
    if($usuario>0)(new AuditoriaTerritorio(Conexion::getConexion('BARRIOS')))->registrarAccionSegura([
       'usuario'=>$usuario,'tipo'=>AuditoriaTerritorio::BUSQUEDA,'observacion'=>'Consulta de jurisdicciones / organismos RRHH',

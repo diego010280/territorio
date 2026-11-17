@@ -48,9 +48,18 @@
         });
       }
     }).addTo(mapa);
+    const jurisAprobadas = L.geoJSON(null, {
+      style:f => {const c=/^#[0-9a-fA-F]{6}$/.test(f.properties?.color_mapa||'')?f.properties.color_mapa:'#225fc1';return {color:c,weight:2.5,fillColor:c,fillOpacity:.16};},
+      onEachFeature:(f,l)=>l.bindPopup('Jurisdicción APROBADA: '+(f.properties?.nombre||'')+' · RRHH '+(f.properties?.id_rrhh||'—'))
+    }).addTo(mapa);
+    const jurisBorradores = L.geoJSON(null, {
+      style:()=>({color:'#e48d13',weight:2,fillColor:'#e48d13',fillOpacity:.08,dashArray:'5 5'}),
+      onEachFeature:(f,l)=>l.bindPopup('PRELIMINAR KML - NO APROBADO: '+(f.properties?.nombre||''))
+    });
+    let capasJurisOficial=[],capasJurisPre=[];
     const controlCapas = L.control.layers(
       {'OpenStreetMap': calles},
-      {'Barrios oficiales aprobados': oficiales, 'Municipales (sin publicar)': pendientes},
+      {'Barrios oficiales aprobados': oficiales, 'Municipales (sin publicar)': pendientes, 'Jurisdicciones oficiales aprobadas': jurisAprobadas, 'Jurisdicciones KML preliminares (solo gestión)': jurisBorradores},
       {collapsed: pantallaMovil, position:'topright'}
     ).addTo(mapa);
     if (pantallaMovil) {
@@ -130,7 +139,7 @@
       return data;
     }
     function irACapa(layer) {
-      const capaPadre = layer.feature?.properties?.fuente === 'OFICIAL' ? oficiales : pendientes;
+      const capaPadre = layer._jurisLayer || (layer.feature?.properties?.fuente === 'OFICIAL' ? oficiales : pendientes);
       if (!mapa.hasLayer(capaPadre)) mapa.addLayer(capaPadre);
       mapa.fitBounds(layer.getBounds(), {maxZoom:17,padding:[24,24]});
       marcarPoligono(layer);
@@ -141,13 +150,13 @@
       resultados.replaceChildren();
       const texto = buscador.value.trim().toLocaleLowerCase('es');
       if (texto.length < 2) return;
-      const encontrados = [...capasOficiales, ...capas].filter(c => String(c.feature?.properties?.nombre || '')
+      const encontrados = [...capasOficiales, ...capas, ...capasJurisOficial, ...capasJurisPre].filter(c => String(c.feature?.properties?.nombre || '')
         .toLocaleLowerCase('es').includes(texto)).slice(0,30);
       encontrados.forEach(c => {
         const boton = document.createElement('button');
         boton.type='button';
         boton.className='list-group-item list-group-item-action py-2';
-        boton.textContent=c.feature.properties.nombre + (c.feature.properties.fuente==='OFICIAL' ? ' · APROBADO' : ' · Municipal preliminar');
+        boton.textContent=c.feature.properties.nombre + (c._jurisLayer ? (c._jurisLayer===jurisAprobadas?' · Jurisdicción aprobada':' · Jurisdicción KML preliminar') : (c.feature.properties.fuente==='OFICIAL' ? ' · Barrio aprobado' : ' · Municipal preliminar'));
         boton.addEventListener('click', () => irACapa(c));
         resultados.appendChild(boton);
       });
@@ -262,6 +271,19 @@
         aviso(`${capasOficiales.length} barrios aprobados y ${capas.length} referencias municipales cargados.`);
       } catch(error) { aviso('No se pudo cargar la capa oficial: '+error.message); }
     })();
+    async function cargarJuris(estado,grupo) {
+      try {
+        const resp=await fetch(base+'/ajax/visor_jurisdicciones.php?'+new URLSearchParams({estado}),{credentials:'same-origin',cache:'no-store'});
+        // Usuarios sin acceso a gestión no pueden ver borradores.
+        if(estado==='BORRADOR'&&[401,403].includes(resp.status)) return;
+        const data=await resp.json();if(!resp.ok||data.type!=='FeatureCollection')throw new Error(data.error||'Respuesta inválida');
+        grupo.clearLayers();grupo.addData(data);
+        const layers=grupo.getLayers();layers.forEach(l=>l._jurisLayer=grupo);
+        if(estado==='APROBADO')capasJurisOficial=layers;else capasJurisPre=layers;
+      } catch(e){console.warn('[Visor jurisdicciones '+estado+']',e.message);}
+    }
+    cargarJuris('APROBADO',jurisAprobadas);
+    cargarJuris('BORRADOR',jurisBorradores);
     requestAnimationFrame(()=>mapa.invalidateSize());
   });
 })();
