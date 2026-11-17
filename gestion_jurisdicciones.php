@@ -24,5 +24,5 @@ require_once __DIR__.'/templates/menu.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-<script src="/territorio/assets/js/gestion-jurisdicciones.js?v=5"></script>
+<script src="/territorio/assets/js/gestion-jurisdicciones.js?v=6"></script>
 </body></html>

@@ -29,21 +29,34 @@
           </div>
           <div id="jurMapa" style="height:530px;max-height:72vh;border-radius:.5rem;border:1px solid #ddd"></div>
           <div class="small text-muted mt-2 mb-2"><strong>Pasos:</strong> 1. Elegí la jurisdicción. 2. Cargá el borrador del KML o dibujá uno nuevo. 3. Presioná <strong>Editar vértices</strong>. 4. Guardá la edición. 5. Completá el motivo y presentá la solicitud. Los cambios NO se publican automáticamente.</div>
-          <div class="d-flex flex-wrap gap-2 mb-2">
-            <button class="btn btn-sm btn-outline-primary" id="jurCargarBorrador" type="button">1. Cargar borrador KML</button>
-            <button class="btn btn-sm btn-outline-secondary" id="jurCargarAprobada" type="button" title="Solo si ya existe un polígono aprobado: carga una copia para proponer otra versión">Copiar polígono oficial</button>
-            <button class="btn btn-sm btn-outline-primary" id="jurDibujarNuevo" type="button">Dibujar nuevo</button>
+          <div class="border rounded p-3 mb-3 bg-body-tertiary" aria-label="Herramientas de geometría">
+            <div class="fw-semibold mb-2">Herramientas de geometría — propuesta NO oficial</div>
+            <div class="small text-muted mb-2">Primero elegí la jurisdicción y cargá el borrador KML, copiá el oficial (si ya existe), dibujá una nueva geometría o importá GeoJSON.</div>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <button class="btn btn-sm btn-outline-primary" id="jurCargarBorrador" type="button">Cargar borrador KML</button>
+              <button class="btn btn-sm btn-outline-secondary" id="jurCargarAprobada" type="button" title="Disponible únicamente si ya existe un polígono oficial aprobado">Copiar polígono oficial</button>
+              <button type="button" class="btn btn-sm btn-outline-dark" id="jurImportarGeoJSON">Importar GeoJSON</button>
+              <input type="file" id="jurArchivoGeoJSON" accept=".json,.geojson,application/geo+json,application/json" hidden>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mb-2">
+              <button type="button" class="btn btn-sm btn-outline-success" id="jurDibujarGuiado">⬡ Dibujar</button>
+              <button type="button" class="btn btn-sm btn-outline-primary" id="jurCerrarPoligono" disabled>Cerrar polígono</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="jurDeshacerVertice" disabled>Deshacer vértice</button>
+              <button type="button" class="btn btn-sm btn-primary" id="jurEditarGuiado">Editar vértices</button>
+              <button type="button" class="btn btn-sm btn-outline-danger" id="jurEliminarVertice" disabled>Eliminar vértice seleccionado</button>
+              <button type="button" class="btn btn-sm btn-outline-success" id="jurFinalizarGuiado" disabled>Finalizar edición</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="jurCancelarEdicion" disabled>Cancelar edición</button>
+              <button type="button" class="btn btn-sm btn-outline-danger" id="jurQuitarPropuesta">Quitar geometría propuesta</button>
+            </div>
+            <div class="small" id="jurModoEditor" role="status">Modo: consulta. Elegí una jurisdicción para comenzar.</div>
+            <div class="small text-muted mt-2">Para mover o agregar vértices, elegí «Editar vértices». «Finalizar edición» conserva el dibujo solamente en pantalla; «Presentar solicitud» registra la propuesta pendiente.</div>
           </div>
-          <div class="d-flex flex-wrap gap-2 mb-2 p-2 border rounded bg-body-tertiary">
-            <button class="btn btn-sm btn-primary" id="jurEditarVertices" type="button" disabled>2. Editar vértices</button>
-            <button class="btn btn-sm btn-success" id="jurGuardarEdicion" type="button" disabled>3. Guardar edición</button>
-            <button class="btn btn-sm btn-outline-danger" id="jurCancelarEdicion" type="button" disabled>Cancelar edición</button>
-          </div>
-          <p class="small text-muted mb-2">Durante la edición las capas de referencia se ocultan para trabajar mejor. Arrastrá los nodos para moverlos y los puntos intermedios para agregar vértices. «Guardar edición» solo guarda la copia en pantalla: para enviar el cambio debés presionar «Presentar solicitud».</p>
+          <div class="alert alert-light border py-2 small" id="jurSeleccionDetalle">Ninguna jurisdicción seleccionada.</div>
           <div class="small text-muted my-2" id="jurEstadoGeometria"></div>
           <label for="jurMotivo" class="form-label">Motivo de la propuesta</label>
           <textarea id="jurMotivo" rows="2" class="form-control" placeholder="Explicar por qué se incorpora o modifica la jurisdicción"></textarea>
-          <button type="button" id="jurProponer" class="btn btn-success mt-2" <?= !$perm['modifica']?'disabled':'' ?>>Presentar solicitud de geometría</button>
+          <div id="jurEstadoPropuesta" role="status" class="small mt-2 text-muted"></div>
+          <button type="button" id="jurProponer" class="btn btn-success mt-2" <?= !($perm['alta']||$perm['modifica'])?'disabled':'' ?>>Presentar solicitud de geometría</button>
           <button type="button" id="jurLimpiarMapa" class="btn btn-outline-secondary mt-2">Limpiar dibujo</button>
         </div></div>
     </div>

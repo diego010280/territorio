@@ -25,7 +25,16 @@ try {
       'usuario'=>$usuario,'tipo'=>AuditoriaTerritorio::BUSQUEDA,'observacion'=>'Consulta de jurisdicciones / organismos RRHH',
       'parametros'=>['accion'=>$accion,'q'=>mb_substr((string)($_GET['q']??''),0,90)]]);
  } elseif($_SERVER['REQUEST_METHOD']==='POST') {
-   $auth->exigir('gestion_jurisdicciones.php',$accion==='crear_desde_rrhh'?'alta':'modifica');
+   // ALTA: crea una jurisdicción preliminar o presenta una NUEVA solicitud.
+   // MODIFICA: también puede presentar propuestas; nunca publica directamente.
+   if($accion==='crear_desde_rrhh') {
+     $auth->exigir('gestion_jurisdicciones.php','alta');
+   } elseif($accion==='proponer_geometria') {
+     if(!$auth->puede('gestion_jurisdicciones.php','alta') && !$auth->puede('gestion_jurisdicciones.php','modifica'))
+       throw new RuntimeException('Se requiere permiso ALTA o MODIFICA para presentar una propuesta de jurisdicción.',403);
+   } else {
+     throw new RuntimeException('Acción desconocida.',400);
+   }
    $csrf=(string)($_SESSION['terr_jurisdicciones_csrf']??'');
    if($csrf===''||!hash_equals($csrf,(string)($_SERVER['HTTP_X_CSRF_TOKEN']??'')))throw new RuntimeException('CSRF inválido.',403);
    $body=file_get_contents('php://input');if(strlen($body)>600000)throw new RuntimeException('Solicitud demasiado grande.',400);
