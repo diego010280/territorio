@@ -22,6 +22,9 @@ require_once __DIR__ . '/templates/menu.php';
 require_once __DIR__ . '/templates/footer.php';
 require_once __DIR__ . '/templates/scripts.php';
 ?>
-<script src="/territorio/assets/js/gestion-barrios.js?v=11"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/territorio/assets/js/historial-territorial.js?v=2"></script>
+<script src="/territorio/assets/js/gestion-barrios.js?v=12"></script>
 </body>
 </html>

@@ -205,6 +205,7 @@
       listado('Equivalencias SURC (solo VALIDADA habilita cruces con denuncias)',b.equivalencias_surc,f=>
         'Código SURC '+f.barrio_codigo_surc+' · '+(f.nombre_surc||'Sin nombre')+' · Localidad SURC '+(f.localidad_surc||'?')+' · '+f.estado);
       listado('Versiones geométricas',b.geometrias,f=>'Versión '+f.version+' · '+f.estado+' · '+f.origen);
+      if(window.TERR_HISTORIAL?.montar) await window.TERR_HISTORIAL.montar(cuerpo,Number(b.id_barrio));
     }catch(e){cuerpo.textContent='No se pudo cargar el detalle: '+e.message;}
   });
  });
