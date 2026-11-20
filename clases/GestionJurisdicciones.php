@@ -3,6 +3,7 @@ declare(strict_types=1);
 /** Etapa 1: búsqueda RRHH, alta preliminar, propuesta de polígono.
  * La aprobación y publicación no están habilitadas en este servicio.
  */
+require_once __DIR__.'/ValidacionEspacialJurisdicciones.php';
 final class GestionJurisdicciones {
     public function __construct(private PDO $db) {}
     public function buscarRRHH(string $texto): array {
@@ -39,6 +40,54 @@ final class GestionJurisdicciones {
         $texto=mb_substr(trim($texto),0,90);
         $s->execute([':filtro'=>$texto,':nombre'=>'%'.$texto.'%',':codigo'=>$texto]);
         return $s->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+
+    /** Grilla paginada. Solo lectura y con filtros vinculados a RRHH, sin modificar RRHH. */
+    public function listarPaginado(array $f): array {
+        $pagina=max(1,min(100000,(int)($f['pagina']??1)));
+        $tam=max(10,min(100,(int)($f['tam']??25)));
+        $q=mb_substr(trim((string)($f['q']??'')),0,90);
+        $tipo=(string)($f['tipo']??'');
+        $estado=(string)($f['estado']??'');
+        $geo=(string)($f['geometria']??'');
+        $ddp=(int)($f['ddp']??0);
+        if(!in_array($tipo,['','DDP','DEPENDENCIA'],true))throw new InvalidArgumentException('Tipo inválido.',400);
+        if(!in_array($estado,['','PRELIMINAR','APROBADO','INACTIVO'],true))throw new InvalidArgumentException('Estado inválido.',400);
+        if(!in_array($geo,['','APROBADA','SIN_APROBAR','BORRADOR'],true))throw new InvalidArgumentException('Filtro de geometría inválido.',400);
+        if($ddp<0||$ddp>14)throw new InvalidArgumentException('DDP inválido.',400);
+        $conds=['j.activo=1'];$args=[];
+        if($q!==''){
+            $conds[]="(j.nombre LIKE :nom OR j.codigo_externo LIKE :cod OR CAST(j.id_jurisdiccion AS CHAR)=:idexact OR EXISTS (
+                 SELECT 1 FROM geoterr.geo_jurisdicciones_rrhh vr
+                 WHERE vr.id_jurisdiccion=j.id_jurisdiccion AND vr.estado IN ('PROPUESTO','VALIDADO')
+                   AND CAST(vr.id_organismo_rrhh AS CHAR)=:rrhh))";
+            $args[':nom']='%'.$q.'%';$args[':cod']='%'.$q.'%';$args[':idexact']=$q;$args[':rrhh']=$q;
+        }
+        if($tipo!==''){$conds[]='j.tipo=:tipo';$args[':tipo']=$tipo;}
+        if($estado!==''){$conds[]='j.estado=:estado';$args[':estado']=$estado;}
+        if($ddp>0){$conds[]='j.numero_ddp=:ddp';$args[':ddp']=$ddp;}
+        $geoExiste="EXISTS (SELECT 1 FROM geoterr.geo_jurisdicciones_geometrias ge WHERE ge.id_jurisdiccion=j.id_jurisdiccion AND ge.estado='APROBADO')";
+        if($geo==='APROBADA')$conds[]=$geoExiste;
+        elseif($geo==='SIN_APROBAR')$conds[]='NOT '.$geoExiste;
+        elseif($geo==='BORRADOR')$conds[]="EXISTS (SELECT 1 FROM geoterr.geo_jurisdicciones_geometrias gb WHERE gb.id_jurisdiccion=j.id_jurisdiccion AND gb.estado='BORRADOR')";
+        $where=implode(' AND ',$conds);
+        $count=$this->db->prepare('SELECT COUNT(*) FROM geoterr.geo_jurisdicciones j WHERE '.$where);
+        $count->execute($args);$total=(int)$count->fetchColumn();
+        $offset=($pagina-1)*$tam;
+        $sql="SELECT j.id_jurisdiccion,j.nombre,j.tipo,j.numero_ddp,j.estado,j.color_mapa,j.codigo_externo,
+               (SELECT MIN(v.id_organismo_rrhh) FROM geoterr.geo_jurisdicciones_rrhh v
+                WHERE v.id_jurisdiccion=j.id_jurisdiccion AND v.estado IN ('VALIDADO','PROPUESTO')) AS id_organismo_rrhh,
+               (SELECT MAX(gg.version) FROM geoterr.geo_jurisdicciones_geometrias gg
+                WHERE gg.id_jurisdiccion=j.id_jurisdiccion AND gg.estado='APROBADO') AS version_oficial,
+               (SELECT COUNT(*) FROM geoterr.geo_jurisdicciones_geometrias gb
+                WHERE gb.id_jurisdiccion=j.id_jurisdiccion AND gb.estado='BORRADOR') AS borradores,
+               (SELECT COUNT(*) FROM geoterr.geo_jurisdicciones_solicitudes s
+                WHERE s.id_jurisdiccion=j.id_jurisdiccion AND s.estado='PENDIENTE') AS pendientes
+             FROM geoterr.geo_jurisdicciones j WHERE ".$where.
+             " ORDER BY j.tipo,j.nombre,j.id_jurisdiccion LIMIT ".$tam." OFFSET ".$offset;
+        $stmt=$this->db->prepare($sql);$stmt->execute($args);
+        return ['data'=>$stmt->fetchAll(PDO::FETCH_ASSOC),'total'=>$total,'pagina'=>$pagina,'tam'=>$tam];
     }
 
     /** Datos en SOLO LECTURA. BORRADOR es orientativo y nunca es oficial. */
@@ -102,6 +151,8 @@ final class GestionJurisdicciones {
     public function proponerGeometria(int $id,array $geom,string $motivo,int $usuario): array {
         if($id<1||$usuario<1||mb_strlen(trim($motivo))<10)throw new InvalidArgumentException('Jurisdicción, usuario y motivo (mínimo 10 caracteres) son obligatorios.',400);
         $wkt=self::geojsonAWkt($geom);
+        $diagnostico=ValidacionEspacialJurisdicciones::evaluar($this->db,$id,$geom);
+        ValidacionEspacialJurisdicciones::exigirSinConflictos($diagnostico);
         $this->db->beginTransaction();
         try {
             $s=$this->db->prepare('SELECT id_jurisdiccion,estado FROM geoterr.geo_jurisdicciones WHERE id_jurisdiccion=? AND activo=1 FOR UPDATE');$s->execute([$id]);
@@ -120,7 +171,59 @@ final class GestionJurisdicciones {
             $this->db->commit();return ['id_solicitud'=>$sol,'estado'=>'PENDIENTE','version_base'=>$base];
         } catch(Throwable $e) {if($this->db->inTransaction())$this->db->rollBack();throw $e;}
     }
-    private static function geojsonAWkt(array $g):string {
+    /** Mismo validador espacial de Gestion y Revision. */
+    public function comprobarSolapamiento(int $id, array $geometry): array {
+        return ValidacionEspacialJurisdicciones::evaluar($this->db,$id,$geometry);
+    }
+
+    /** Obtener solo la propuesta PENDIENTE del territorio seleccionado; no consultar datos de otros sin autorización. */
+    public function solicitudPendiente(int $id): array {
+        if($id<1)throw new InvalidArgumentException('Jurisdicción inválida.',400);
+        $q=$this->db->prepare("SELECT id_solicitud,id_jurisdiccion,estado,version_base,revision_actual,motivo,usuario_solicitante, ST_AsGeoJSON(geom_propuesta,12) AS geojson, SHA2(ST_AsBinary(geom_propuesta),256) AS huella FROM geoterr.geo_jurisdicciones_solicitudes WHERE id_jurisdiccion=? AND estado='PENDIENTE' ORDER BY id_solicitud DESC LIMIT 2");
+        $q->execute([$id]);$rows=$q->fetchAll(PDO::FETCH_ASSOC);
+        if(count($rows)>1)throw new RuntimeException('Hay más de una solicitud pendiente para la misma jurisdicción. Intervención administrativa requerida.',409);
+        if(!$rows)return ['solicitud'=>null];
+        $v=$rows[0];$v['geometria']=$v['geojson']?json_decode((string)$v['geojson'],true,512,JSON_THROW_ON_ERROR):null;unset($v['geojson']);
+        return ['solicitud'=>$v];
+    }
+
+    /** Corrección versionada: misma solicitud, historia íntegra de ambas geometrías, ABM y control de concurrencia. */
+    public function corregirSolicitud(int $idSol,int $revisionEsperada,int $jur,array $geometria,string $motivo,int $usuario):array {
+        if($idSol<1||$revisionEsperada<1||$jur<1||$usuario<1||mb_strlen(trim($motivo))<10||mb_strlen(trim($motivo))>1000)
+            throw new InvalidArgumentException('Solicitud, jurisdicción, versión y fundamento (10-1000 caracteres) son obligatorios.',400);
+        $wkt=self::geojsonAWkt($geometria);
+        $this->db->beginTransaction();
+        try {
+            $q=$this->db->prepare("SELECT s.id_solicitud,s.id_jurisdiccion,s.revision_actual,s.estado,s.version_base,s.motivo,s.usuario_solicitante, SHA2(ST_AsBinary(s.geom_propuesta),256) AS hash_anterior FROM geoterr.geo_jurisdicciones_solicitudes s WHERE s.id_solicitud=? FOR UPDATE");
+            $q->execute([$idSol]);$s=$q->fetch(PDO::FETCH_ASSOC);
+            if(!$s || (int)$s['id_jurisdiccion']!==$jur)throw new RuntimeException('La solicitud no pertenece a la jurisdicción seleccionada.',404);
+            if($s['estado']!=='PENDIENTE')throw new RuntimeException('La solicitud ya no está PENDIENTE.',409);
+            if((int)$s['revision_actual']!==$revisionEsperada)throw new RuntimeException('Otra operación actualizó la propuesta. Volvé a cargarla antes de modificarla.',409);
+            $q=$this->db->prepare("SELECT COALESCE(MAX(version),0) FROM geoterr.geo_jurisdicciones_geometrias WHERE id_jurisdiccion=? AND estado='APROBADO'");$q->execute([$jur]);
+            if((int)$q->fetchColumn()!==(int)$s['version_base'])throw new RuntimeException('La geometría oficial cambió desde la presentación. Requiere nueva revisión.',409);
+            // Misma validación de estructura y solape que usa la aprobación. No se publica nada.
+            $diagnostico=ValidacionEspacialJurisdicciones::evaluar($this->db,$jur,$geometria);
+            ValidacionEspacialJurisdicciones::exigirSinConflictos($diagnostico);
+            $hashNuevo=hash('sha256',$wkt);
+            $q=$this->db->prepare("SELECT SHA2(ST_AsBinary(ST_GeomFromText(?,4326)),256)");$q->execute([$wkt]);
+            if(hash_equals((string)$s['hash_anterior'],(string)$q->fetchColumn()) && trim($motivo)===trim((string)$s['motivo']))
+                throw new RuntimeException('No hay cambios en la propuesta ni en su fundamento.',409);
+            $nueva=$revisionEsperada+1;$cid=AuditoriaTerritorio::correlacion();
+            $q=$this->db->prepare("INSERT INTO geoterr.geo_jurisdicciones_solicitudes_revisiones (id_solicitud,revision_numero,geometria_antes,geometria_despues,motivo_antes,motivo_despues,usuario_revision,correlacion_id,hash_antes,hash_despues) SELECT id_solicitud,?,geom_propuesta,ST_GeomFromText(?,4326),motivo,?, ?,?, SHA2(ST_AsBinary(geom_propuesta),256),SHA2(ST_AsBinary(ST_GeomFromText(?,4326)),256) FROM geoterr.geo_jurisdicciones_solicitudes WHERE id_solicitud=? AND estado='PENDIENTE'");
+            $q->execute([$nueva,$wkt,trim($motivo),$usuario,$cid,$wkt,$idSol]);
+            if($q->rowCount()!==1)throw new RuntimeException('No pudo almacenarse el historial de la corrección.',409);
+            $q=$this->db->prepare("UPDATE geoterr.geo_jurisdicciones_solicitudes SET geom_propuesta=ST_GeomFromText(?,4326),motivo=?,revision_actual=? WHERE id_solicitud=? AND estado='PENDIENTE' AND revision_actual=?");
+            $q->execute([$wkt,trim($motivo),$nueva,$idSol,$revisionEsperada]);
+            if($q->rowCount()!==1)throw new RuntimeException('Conflicto de revisión al guardar.',409);
+            (new AuditoriaTerritorio($this->db))->registrarABM(['usuario'=>$usuario,'tipo'=>AuditoriaTerritorio::MODIFICACION,'tabla'=>'geoterr.geo_jurisdicciones_solicitudes','registro'=>$idSol,'correlacion'=>$cid,
+                'antes'=>['revision'=>$revisionEsperada,'hash'=>$s['hash_anterior'],'motivo'=>$s['motivo'],'jurisdiccion'=>$jur],
+                'despues'=>['revision'=>$nueva,'hash'=>$hashNuevo,'motivo'=>trim($motivo),'jurisdiccion'=>$jur,'diagnostico'=>$diagnostico],
+                'observacion'=>'Corrección de geometría de solicitud pendiente #'.$idSol]);
+            $this->db->commit();return ['id_solicitud'=>$idSol,'estado'=>'PENDIENTE','revision'=>$nueva,'correlacion'=>$cid,'diagnostico'=>$diagnostico];
+        }catch(Throwable $e){if($this->db->inTransaction())$this->db->rollBack();throw $e;}
+    }
+
+    public static function geojsonAWkt(array $g):string {
         $type=(string)($g['type']??'');$polys=$type==='Polygon'?[$g['coordinates']??[]]:($type==='MultiPolygon'?($g['coordinates']??[]):null);
         if(!is_array($polys)||!$polys||count($polys)>25)throw new InvalidArgumentException('Se requiere Polygon/MultiPolygon con hasta 25 piezas.',400);
         $out=[];$total=0;

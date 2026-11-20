@@ -10,11 +10,20 @@ try {
  $db=Conexion::getConexion('BARRIOS');$srv=new RevisionJurisdicciones($db);
  $user=(int)($_SESSION['usuario_id']??0);$accion=(string)($_GET['accion']??'');
  if($_SERVER['REQUEST_METHOD']==='GET'){
-   if($accion==='listar')$result=['data'=>$srv->listar()];
+   if($accion==='listar'){
+     $f=[
+       'estado'=>(string)($_GET['estado']??'TODAS'),
+       'texto'=>(string)($_GET['texto']??''),
+       'rrhh'=>(string)($_GET['rrhh']??''),
+       'desde'=>(string)($_GET['desde']??''),
+       'hasta'=>(string)($_GET['hasta']??''),
+     ];
+     $result=['data'=>$srv->listar($f)];
+   }
    elseif($accion==='detalle')$result=$srv->detalle((int)($_GET['id']??0));
    else throw new InvalidArgumentException('Acción de revisión inexistente.',400);
-   (new AuditoriaTerritorio($db))->registrarAccionSegura(['usuario'=>$user,'tipo'=>AuditoriaTerritorio::CONSULTA,
-       'observacion'=>'Consulta revisión de jurisdicciones','parametros'=>['accion'=>$accion,'solicitud'=>(int)($_GET['id']??0)]]);
+   (new AuditoriaTerritorio($db))->registrarAccionSegura(['usuario'=>$user,'tipo'=>$accion==='listar'?AuditoriaTerritorio::BUSQUEDA:AuditoriaTerritorio::CONSULTA,
+       'observacion'=>$accion==='listar'?'Busqueda revision de jurisdicciones':'Consulta detalle revision de jurisdicciones','parametros'=>['accion'=>$accion,'solicitud'=>(int)($_GET['id']??0),'estado'=>(string)($_GET['estado']??''),'texto'=>mb_substr((string)($_GET['texto']??''),0,100),'rrhh'=>(string)($_GET['rrhh']??''),'desde'=>(string)($_GET['desde']??''),'hasta'=>(string)($_GET['hasta']??'')]]);
  }elseif($_SERVER['REQUEST_METHOD']==='POST'&&$accion==='resolver'){
    $auth->exigir('revision_jurisdicciones.php','modifica');
    $csrf=(string)($_SESSION['terr_revision_juris_csrf']??'');
